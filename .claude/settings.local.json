@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(adb -s emulator-5554 shell input tap 817 712)",
+      "Bash(adb -s emulator-5554 shell uiautomator dump)",
+      "Bash(adb -s emulator-5554 shell \"cat /sdcard/window_dump.xml\")",
+      "Bash(grep -oE 'content-desc=\"[^\"]{1,60}\" [^/]*/>')",
+      "Bash(adb -s emulator-5554 shell input tap 540 900)",
+      "Bash(adb -s emulator-5554 shell input text \"Habib\")",
+      "Bash(adb -s emulator-5554 exec-out screencap -p)"
+    ]
+  }
+}
