@@ -20,16 +20,17 @@ class QuantityControl extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final ac = Theme.of(context).extension<AppThemeColors>()!;
     final atMin = quantity <= minQuantity;
+    final showDelete = minQuantity == 0 && quantity == 1;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         _ControlButton(
           onPressed: atMin ? null : onDecrement,
-          icon: Icons.remove,
-          backgroundColor: ac.surface,
-          borderColor: ac.border,
-          iconColor: atMin ? ac.mutedText : cs.onSurface,
+          icon: showDelete ? Icons.delete_outline : Icons.remove,
+          backgroundColor: showDelete ? cs.errorContainer : ac.surface,
+          borderColor: showDelete ? cs.error.withValues(alpha: 0.5) : ac.border,
+          iconColor: atMin ? ac.mutedText : (showDelete ? cs.error : cs.onSurface),
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),

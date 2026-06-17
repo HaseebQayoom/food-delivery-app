@@ -23,14 +23,33 @@ class CartRepository {
     return _prefs.setString(_key, jsonEncode(items.map((e) => e.toJson()).toList()));
   }
 
-  List<CartItemModel> addItem(List<CartItemModel> cart, DishModel dish) {
-    final idx = cart.indexWhere((e) => e.dish.id == dish.id);
+  List<CartItemModel> addItem(
+    List<CartItemModel> cart,
+    DishModel dish, {
+    String? selectedSize,
+    List<String> addonNames = const [],
+    int? unitPriceRs,
+  }) {
+    final price = unitPriceRs ?? dish.priceRs;
+    // Match by dish id AND selected size so different sizes are separate rows
+    final idx = cart.indexWhere(
+      (e) => e.dish.id == dish.id && e.selectedSize == selectedSize,
+    );
     if (idx >= 0) {
       final updated = List<CartItemModel>.from(cart);
       updated[idx] = cart[idx].copyWith(quantity: cart[idx].quantity + 1);
       return updated;
     }
-    return [...cart, CartItemModel(dish: dish, quantity: 1)];
+    return [
+      ...cart,
+      CartItemModel(
+        dish: dish,
+        quantity: 1,
+        selectedSize: selectedSize,
+        addonNames: addonNames,
+        unitPriceRs: price,
+      ),
+    ];
   }
 
   List<CartItemModel> removeItem(List<CartItemModel> cart, String dishId) {

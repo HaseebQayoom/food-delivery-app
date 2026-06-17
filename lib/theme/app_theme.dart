@@ -16,7 +16,7 @@ class AppTheme {
     return _theme(
       colorScheme,
       const AppThemeColors(
-        background: Color(0xFFFFF0E6),
+        background: Color(0xFFFFF8F3),
         surface: Color(0xFFFFFFFF),
         creamSurface: Color(0xFFFCEFE3),
         softAccentSurface: Color(0xFFFFE8DC),

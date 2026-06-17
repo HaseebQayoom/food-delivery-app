@@ -27,6 +27,15 @@ class RestaurantRepository {
     return RestaurantModel.fromJson(data);
   }
 
+  Future<RestaurantModel> getFirstRestaurant() async {
+    final data = await _db
+        .from('restaurants')
+        .select()
+        .limit(1)
+        .single();
+    return RestaurantModel.fromJson(data);
+  }
+
   Future<List<RestaurantModel>> getFavoriteRestaurants() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return [];

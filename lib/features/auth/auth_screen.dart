@@ -1,11 +1,11 @@
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:food_delivery/core/constants/env.dart';
 import 'package:food_delivery/core/navigation/app_navigator.dart';
 import 'package:food_delivery/core/utils/validators.dart';
 import 'package:food_delivery/features/auth/providers/auth_notifier.dart';
 import 'package:food_delivery/features/auth/widgets/auth_text.dart';
-import 'package:food_delivery/features/shell/shell_screen.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key});
@@ -41,7 +41,14 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
           );
     }
 
-    if (success && mounted) AppNavigator.toHome(context);
+    if (success && mounted) {
+      final adminEmail = Env.adminEmail;
+      if (adminEmail.isNotEmpty && _email.trim() == adminEmail) {
+        AppNavigator.toAdminShell(context);
+      } else {
+        AppNavigator.toHome(context);
+      }
+    }
   }
 
   @override
@@ -261,15 +268,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                       // Google / OAuth button
                       OutlinedButton.icon(
 
-                        onPressed: () {
-                          Navigator.of(context).push(MaterialPageRoute(builder: (context) => ShellScreen(),));
-                          // TODO: Google OAuth via Supabase
-                          // ScaffoldMessenger.of(context).showSnackBar(
-                          //   const SnackBar(
-                          //     content: Text('Google sign-in coming soon.'),
-                          //   ),
-                          // );
-                        },
+                        onPressed: () => AppNavigator.toHome(context),
                         icon: const Icon(Icons.email_outlined),
                         label: const Text(
                           'Continue with Google',

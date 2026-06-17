@@ -12,6 +12,22 @@ class AppColors {
   // Status colors (not part of standard Material 3 scheme)
   static const Color success = Color(0xFF2DBE60);
   static const Color warning = Color(0xFFFFB400);
+
+  // Admin status pill — exact JSX statusMeta values
+  static const Color statusNewBg = Color(0xFFE1F0FF);
+  static const Color statusNewFg = Color(0xFF2563EB);
+  static const Color statusPreparingBg = Color(0xFFFFF1D6);
+  static const Color statusPreparingFg = Color(0xFFB7791F);
+  static const Color statusDeliveredBg = Color(0xFFE2F6E9);
+  static const Color statusDeliveredFg = Color(0xFF1F8A4C);
+  static const Color statusCancelledBg = Color(0xFFFBEAEA);
+  static const Color statusCancelledFg = Color(0xFFDC2626);
+
+  // Admin misc
+  static const Color switchOff = Color(0xFFD8D0C6);
+  static const Color tagSpicy = Color(0xFFE14B3B);
+  static const Color adminBackground = Color(0xFFF7F4EF);
+  static const Color storeOpenBorder = Color(0xFFBFE8CD);
 }
 
 class AppGradients {

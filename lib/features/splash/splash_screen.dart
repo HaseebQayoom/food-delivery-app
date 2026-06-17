@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:food_delivery/core/constants/env.dart';
 import 'package:food_delivery/core/navigation/app_navigator.dart';
 import 'package:food_delivery/core/providers/shared_prefs_provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -33,7 +34,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     } else if (session == null) {
       AppNavigator.toAuth(context);
     } else {
-      AppNavigator.toHome(context);
+      final adminEmail = Env.adminEmail;
+      final userEmail = session.user.email ?? '';
+      if (adminEmail.isNotEmpty && userEmail == adminEmail) {
+        AppNavigator.toAdminShell(context);
+      } else {
+        AppNavigator.toHome(context);
+      }
     }
   }
 
@@ -49,7 +56,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFFEF9F27), Color(0xFFD85A30)],
+            colors: [Colors.deepOrange, Colors.deepOrangeAccent],
           ),
         ),
         child: SafeArea(

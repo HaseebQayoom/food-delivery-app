@@ -7,7 +7,11 @@
       "Bash(grep -oE 'content-desc=\"[^\"]{1,60}\" [^/]*/>')",
       "Bash(adb -s emulator-5554 shell input tap 540 900)",
       "Bash(adb -s emulator-5554 shell input text \"Habib\")",
-      "Bash(adb -s emulator-5554 exec-out screencap -p)"
+      "Bash(adb -s emulator-5554 exec-out screencap -p)",
+      "Bash(flutter analyze *)",
+      "Bash(del \"c:\\\\flutter projects\\\\food_delivery\\\\lib\\\\features\\\\admin\\\\orders\\\\order_list_screen.dart\")",
+      "Bash(del \"c:\\\\flutter projects\\\\food_delivery\\\\lib\\\\features\\\\admin\\\\orders\\\\order_detail_screen.dart\")",
+      "Bash(flutter pub *)"
     ]
   }
 }

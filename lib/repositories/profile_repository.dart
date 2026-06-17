@@ -8,10 +8,68 @@ class ProfileRepository {
   final _db = Supabase.instance.client;
 
   Future<UserModel> getProfile() async {
-    final userId = _db.auth.currentUser?.id;
-    if (userId == null) throw Exception('Not logged in');
-    final data = await _db.from('profiles').select().eq('id', userId).single();
-    return UserModel.fromJson(data);
+    final authUser = _db.auth.currentUser;
+    if (authUser == null) throw Exception('Not logged in');
+    final userId = authUser.id;
+    final metaName = authUser.userMetadata?['full_name'] as String? ?? '';
+    final email = authUser.email ?? '';
+
+    final data =
+        await _db.from('profiles').select().eq('id', userId).maybeSingle();
+
+    final ordersList = await _db
+        .from('orders')
+        .select('id')
+        .eq('user_id', userId);
+
+    final favList = await _db
+        .from('favorites')
+        .select('id')
+        .eq('user_id', userId);
+
+    final ordersCount = ordersList.length;
+    final favCount = favList.length;
+    final points = ordersCount * 50;
+
+    if (data == null) {
+      // Trigger didn't create the row — upsert from auth metadata.
+      try {
+        await _db.from('profiles').upsert({
+          'id': userId,
+          'full_name': metaName,
+          'email': email,
+        });
+      } catch (_) {}
+      return UserModel(
+        id: userId,
+        fullName: metaName,
+        email: email,
+        phone: '',
+        totalOrders: ordersCount,
+        favoriteCount: favCount,
+        points: points,
+      );
+    }
+
+    var user = UserModel.fromJson(data);
+
+    // Row exists but name is blank — patch from auth metadata.
+    if (user.fullName.isEmpty && metaName.isNotEmpty) {
+      try {
+        await _db
+            .from('profiles')
+            .update({'full_name': metaName})
+            .eq('id', userId);
+      } catch (_) {}
+      user = user.copyWith(fullName: metaName);
+    }
+
+    // Override with live counts — profiles table columns are never updated.
+    return user.copyWith(
+      totalOrders: ordersCount,
+      favoriteCount: favCount,
+      points: points,
+    );
   }
 
   Future<UserModel> updateProfile({
@@ -48,10 +106,10 @@ class ProfileRepository {
   Future<void> addAddress(AddressModel address) async {
     final userId = _db.auth.currentUser?.id;
     if (userId == null) return;
-    await _db.from('addresses').insert({
-      ...address.toJson(),
-      'user_id': userId,
-    });
+    final payload = Map<String, dynamic>.from(address.toJson())
+      ..remove('id') // let Supabase generate the UUID
+      ..['user_id'] = userId;
+    await _db.from('addresses').insert(payload);
   }
 
   Future<void> setDefaultAddress(String addressId) async {
@@ -84,10 +142,10 @@ class ProfileRepository {
   Future<void> addPaymentMethod(PaymentMethodModel method) async {
     final userId = _db.auth.currentUser?.id;
     if (userId == null) return;
-    await _db.from('payment_methods').insert({
-      ...method.toJson(),
-      'user_id': userId,
-    });
+    final payload = Map<String, dynamic>.from(method.toJson())
+      ..remove('id') // let Supabase generate the UUID
+      ..['user_id'] = userId;
+    await _db.from('payment_methods').insert(payload);
   }
 
   Future<void> setDefaultPayment(String paymentId) async {

@@ -23,7 +23,7 @@ class OrderRepository {
     final data = await _db.from('orders').insert({
       'user_id': userId,
       'items': items.map((e) => e.toJson()).toList(),
-      'status': OrderStatus.placed.toJson(),
+      'status': OrderStatus.newOrder.toDbString(),
       'restaurant_name': restaurantName,
       'delivery_address': deliveryAddress,
       'placed_at': DateTime.now().toIso8601String(),
@@ -47,18 +47,16 @@ class OrderRepository {
     return (data as List).map((e) => OrderModel.fromJson(e)).toList();
   }
 
-  Future<OrderModel?> getActiveOrder() async {
+  Future<List<OrderModel>> getActiveOrders() async {
     final userId = _db.auth.currentUser?.id;
-    if (userId == null) return null;
+    if (userId == null) return [];
     final data = await _db
         .from('orders')
         .select()
         .eq('user_id', userId)
-        .inFilter('status', ['placed', 'preparing', 'picked'])
-        .order('placed_at', ascending: false)
-        .maybeSingle();
-    if (data == null) return null;
-    return OrderModel.fromJson(data);
+        .inFilter('status', ['new', 'preparing', 'on_the_way'])
+        .order('placed_at', ascending: false);
+    return (data as List).map((e) => OrderModel.fromJson(e)).toList();
   }
 
   Future<OrderModel> trackOrder(String orderId) async {
@@ -69,9 +67,22 @@ class OrderRepository {
   Future<void> updateStatus(String orderId, OrderStatus status) async {
     await _db
         .from('orders')
-        .update({'status': status.toJson()})
+        .update({'status': status.toDbString()})
         .eq('id', orderId);
   }
+
+  // ─── Admin methods ────────────────────────────────────────
+
+  Future<List<OrderModel>> getAllOrdersAdmin() async {
+    final data = await _db
+        .from('orders')
+        .select()
+        .order('placed_at', ascending: false);
+    return (data as List).map((e) => OrderModel.fromJson(e)).toList();
+  }
+
+  Future<void> updateOrderStatus(String orderId, OrderStatus status) =>
+      updateStatus(orderId, status);
 }
 
 final orderRepositoryProvider = Provider<OrderRepository>((_) => OrderRepository());

@@ -8,6 +8,13 @@ class DishModel {
   final int calories;
   final String tag; // badge label e.g. "BESTSELLER"
   final bool isFavorite;
+  final String categoryId;
+  // Admin-panel fields
+  final String description;
+  final bool isAvailable;
+  final double rating;
+  final int prepTimeMin;
+  final bool popular;
 
   const DishModel({
     required this.id,
@@ -19,6 +26,12 @@ class DishModel {
     required this.calories,
     this.tag = '',
     this.isFavorite = false,
+    this.categoryId = '',
+    this.description = '',
+    this.isAvailable = true,
+    this.rating = 0.0,
+    this.prepTimeMin = 0,
+    this.popular = false,
   });
 
   factory DishModel.fromJson(Map<String, dynamic> json) {
@@ -26,12 +39,18 @@ class DishModel {
       id: json['id'] as String,
       name: json['name'] as String,
       imageUrl: json['image_url'] as String?,
-      restaurantId: json['restaurant_id'] as String,
-      restaurantName: json['restaurant_name'] as String,
-      priceRs: json['price_rs'] as int,
-      calories: json['calories'] as int,
+      restaurantId: json['restaurant_id'] as String? ?? '',
+      restaurantName: json['restaurant_name'] as String? ?? '',
+      priceRs: (json['price_rs'] as num?)?.toInt() ?? 0,
+      calories: (json['calories'] as num?)?.toInt() ?? 0,
       tag: json['tag'] as String? ?? '',
       isFavorite: json['is_favorite'] as bool? ?? false,
+      categoryId: json['category_id'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      isAvailable: json['is_available'] as bool? ?? true,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      prepTimeMin: (json['prep_time_min'] as num?)?.toInt() ?? 0,
+      popular: json['popular'] as bool? ?? false,
     );
   }
 
@@ -45,6 +64,12 @@ class DishModel {
         'calories': calories,
         'tag': tag,
         'is_favorite': isFavorite,
+        'category_id': categoryId,
+        'description': description,
+        'is_available': isAvailable,
+        'rating': rating,
+        'prep_time_min': prepTimeMin,
+        'popular': popular,
       };
 
   DishModel copyWith({
@@ -57,6 +82,12 @@ class DishModel {
     int? calories,
     String? tag,
     bool? isFavorite,
+    String? categoryId,
+    String? description,
+    bool? isAvailable,
+    double? rating,
+    int? prepTimeMin,
+    bool? popular,
   }) {
     return DishModel(
       id: id ?? this.id,
@@ -68,6 +99,12 @@ class DishModel {
       calories: calories ?? this.calories,
       tag: tag ?? this.tag,
       isFavorite: isFavorite ?? this.isFavorite,
+      categoryId: categoryId ?? this.categoryId,
+      description: description ?? this.description,
+      isAvailable: isAvailable ?? this.isAvailable,
+      rating: rating ?? this.rating,
+      prepTimeMin: prepTimeMin ?? this.prepTimeMin,
+      popular: popular ?? this.popular,
     );
   }
 }

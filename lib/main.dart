@@ -9,6 +9,9 @@ import 'package:food_delivery/theme/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -49,7 +52,12 @@ class CraveApp extends StatelessWidget {
       theme: AppTheme.lightTheme(),
       // darkTheme: AppTheme.darkTheme(),
       themeMode: ThemeMode.system,
+      navigatorObservers: [routeObserver],
       home: const SplashScreen(),
+      builder: (context, child) => SafeArea(
+        top: false,
+        child: child!,
+      ),
     );
   }
 }

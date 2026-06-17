@@ -9,4 +9,5 @@ class Env {
   static String get geminiApiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
   static String get stripePublishableKey => dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
   static String get stripeSecretKey => dotenv.env['STRIPE_SECRET_KEY'] ?? '';
+  static String get adminEmail => dotenv.env['ADMIN_EMAIL'] ?? '';
 }

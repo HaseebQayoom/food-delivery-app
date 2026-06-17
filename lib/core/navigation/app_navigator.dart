@@ -4,6 +4,7 @@ import 'package:food_delivery/features/cart/cart_screen.dart';
 import 'package:food_delivery/features/chat/chat_screen.dart';
 import 'package:food_delivery/features/checkout/checkout_screen.dart';
 import 'package:food_delivery/features/onboarding/onboarding_screen.dart';
+import 'package:food_delivery/features/orders/active_orders_screen.dart';
 import 'package:food_delivery/features/orders/order_history_screen.dart';
 import 'package:food_delivery/features/orders/order_success_screen.dart';
 import 'package:food_delivery/features/profile/address/address_screen.dart';
@@ -12,7 +13,11 @@ import 'package:food_delivery/features/profile/invite/invite_screen.dart';
 import 'package:food_delivery/features/profile/notifications/notifications_screen.dart';
 import 'package:food_delivery/features/profile/payment/payment_screen.dart';
 import 'package:food_delivery/features/profile/preferences/preferences_screen.dart';
+import 'package:food_delivery/features/home/category_grid_screen.dart';
+import 'package:food_delivery/features/home/menu_all_screen.dart';
+import 'package:food_delivery/features/home/search_screen.dart';
 import 'package:food_delivery/features/restaurant/restaurant_detail_screen.dart';
+import 'package:food_delivery/features/admin/shell/admin_shell_screen.dart';
 import 'package:food_delivery/features/shell/shell_screen.dart';
 import 'package:food_delivery/features/tracking/tracking_screen.dart';
 import 'package:food_delivery/models/order_model.dart';
@@ -26,7 +31,7 @@ class AppNavigator {
   static void toOnboarding(BuildContext context) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+      MaterialPageRoute(builder: (context) => const OnboardingScreen()),
     );
   }
 
@@ -43,6 +48,15 @@ class AppNavigator {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const ShellScreen()),
+      (route) => false,
+    );
+  }
+
+  // Auth → Admin shell  (clears entire back stack)
+  static void toAdminShell(BuildContext context) {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const AdminShellScreen()),
       (route) => false,
     );
   }
@@ -92,6 +106,14 @@ class AppNavigator {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => OrderSuccessScreen(order: order)),
+    );
+  }
+
+  // Home → Active Orders list
+  static void toActiveOrders(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ActiveOrdersScreen()),
     );
   }
 
@@ -148,6 +170,30 @@ class AppNavigator {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const PreferencesScreen()),
+    );
+  }
+
+  // Home → Search (optional pre-filled query)
+  static void toSearch(BuildContext context, {String query = ''}) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SearchScreen(initialQuery: query)),
+    );
+  }
+
+  // Home → Full menu list
+  static void toMenuAll(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MenuAllScreen()),
+    );
+  }
+
+  // Home → Browse by category grid
+  static void toCategoryGrid(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const CategoryGridScreen()),
     );
   }
 

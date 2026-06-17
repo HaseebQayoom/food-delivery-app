@@ -64,7 +64,8 @@ class _OrderCard extends StatelessWidget {
     final date = DateFormat('MMM d, y · h:mm a').format(order.placedAt);
 
     return GestureDetector(
-      onTap: order.status != OrderStatus.delivered
+      onTap: order.status != OrderStatus.delivered &&
+              order.status != OrderStatus.cancelled
           ? () => AppNavigator.toTracking(context, orderId: order.id)
           : null,
       child: Container(
@@ -110,7 +111,8 @@ class _OrderCard extends StatelessWidget {
                 ),
               ],
             ),
-            if (order.status != OrderStatus.delivered) ...[
+            if (order.status != OrderStatus.delivered &&
+                order.status != OrderStatus.cancelled) ...[
               const SizedBox(height: 10),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,

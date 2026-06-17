@@ -7,14 +7,27 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
   static const _deliveryFeeRs = 50;
   String? promoCode;
   int discountRs = 0;
+  String selectedPaymentMethod = 'Visa';
+  String get deliveryAddress => 'Home — DHA Phase 5, Lahore';
 
   CartRepository get _repo => ref.read(cartRepositoryProvider);
 
   @override
   List<CartItemModel> build() => _repo.getCart();
 
-  void addItem(DishModel dish) {
-    state = _repo.addItem(state, dish);
+  void addItem(
+    DishModel dish, {
+    String? selectedSize,
+    List<String> addonNames = const [],
+    int? unitPriceRs,
+  }) {
+    state = _repo.addItem(
+      state,
+      dish,
+      selectedSize: selectedSize,
+      addonNames: addonNames,
+      unitPriceRs: unitPriceRs,
+    );
     _repo.saveCart(state);
   }
 
@@ -40,6 +53,10 @@ class CartNotifier extends Notifier<List<CartItemModel>> {
   void clear() {
     state = [];
     _repo.saveCart(state);
+  }
+
+  void setPaymentMethod(String method) {
+    selectedPaymentMethod = method;
   }
 
   bool applyPromoCode(String code) {

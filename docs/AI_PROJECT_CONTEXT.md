@@ -14,7 +14,7 @@
 | **Purpose** | Food delivery ordering platform for a single restaurant, with customer-facing app and admin panel |
 | **Target Users** | Food delivery customers (Pakistan market); restaurant staff via admin panel |
 | **FYP Context** | Final Year Project — demo-ready, not production-deployed |
-| **Completion** | 99.2% (126/127 in-scope TODOs — only `.env` credentials remain) |
+| **Completion** | Feature-complete — all screens and providers built; only `.env` credentials required to run |
 | **flutter analyze** | ✅ No issues |
 
 ---
@@ -74,10 +74,10 @@ UI (Screen) → watches → Notifier (ViewModel) → reads → Repository → ca
 │  Widget (ConsumerWidget / ConsumerStatefulWidget)           │
 │    ref.watch(xNotifierProvider)  ← rebuilds on state change │
 │    ref.read(xNotifierProvider.notifier).someMethod()        │
-└──────────────┬────────────────────────────────┬────────────┘
-               │ watches state                  │ calls method
-               ▼                                ▼
-┌──────────────────────────────────────────────────────────── ┐
+└──────────────┬────────────────────────────┬────────────────┘
+               │ watches state              │ calls method
+               ▼                            ▼
+┌─────────────────────────────────────────────────────────────┐
 │  Notifier (extends Notifier<State>)                          │
 │    State build() { ... }                                     │
 │    Future<void> someMethod() { ... }                         │
@@ -95,12 +95,13 @@ UI (Screen) → watches → Notifier (ViewModel) → reads → Repository → ca
 ### Code Style Rules
 
 - `(_, _)` for multiple unused callback params — never `(_, _2)` or `(_, __)`
-- `AppThemeColors` tokens via `ac.xxx` — never hardcode `Color(0xFF...)`
+- `AppThemeColors` tokens via `ac.xxx` — never hardcode `Color(0xFF...)` in widget files
 - `AppDimensions.md` for spacing — never hardcode pixel values
 - All secrets via `Env.xxx` from `.env` — never hardcode
 - `SegmentedButton<T>` not deprecated `RadioListTile` group patterns
 - `DropdownMenu<T>` not deprecated `DropdownButtonFormField`
 - `activeThumbColor` not deprecated `activeColor` on `SwitchListTile`
+- Color constants that have no `AppThemeColors` equivalent go in `AppColors` — never inline in widget files
 
 ---
 
@@ -116,9 +117,9 @@ food_delivery/
 │   │   │   ├── app_strings.dart       ← app-wide string constants
 │   │   │   └── env.dart               ← Env class — reads .env via flutter_dotenv
 │   │   ├── navigation/
-│   │   │   ├── app_navigator.dart     ← AppNavigator (17 static methods, customer app)
-│   │   │   ├── admin_navigator.dart   ← AdminNavigator (5 static methods, admin app)
-│   │   │   └── app_routes.dart        ← route name constants
+│   │   │   ├── app_navigator.dart     ← AppNavigator (21 static methods)
+│   │   │   ├── admin_navigator.dart   ← legacy stub — prefer AppNavigator.toAdminShell
+│   │   │   └── app_routes.dart        ← route name constants (not actively used)
 │   │   ├── providers/
 │   │   │   ├── auth_state_provider.dart   ← currentUserProvider, isLoggedInProvider
 │   │   │   ├── dio_provider.dart          ← dioProvider (Dio HTTP client)
@@ -130,34 +131,26 @@ food_delivery/
 │   │   └── widgets/                   ← shared reusable widgets (see Reusable Widgets)
 │   │
 │   ├── features/
-│   │   ├── admin/                     ← admin panel (separate app via main_admin.dart)
-│   │   │   ├── auth/
-│   │   │   │   ├── admin_auth_notifier.dart
-│   │   │   │   └── admin_login_screen.dart
-│   │   │   ├── categories/
-│   │   │   │   ├── admin_categories_notifier.dart
-│   │   │   │   ├── category_form_screen.dart
-│   │   │   │   └── category_list_screen.dart
-│   │   │   ├── dashboard/
-│   │   │   │   ├── dashboard_notifier.dart
-│   │   │   │   └── dashboard_screen.dart
+│   │   ├── admin/                     ← admin panel (single app, email-gated routing)
 │   │   │   ├── dishes/
-│   │   │   │   ├── admin_dishes_notifier.dart
-│   │   │   │   ├── dish_form_screen.dart
-│   │   │   │   └── dish_list_screen.dart
+│   │   │   │   └── admin_dishes_notifier.dart  ← AdminDishesNotifier + AdminDishesState
+│   │   │   ├── menu/
+│   │   │   │   ├── admin_menu_screen.dart      ← 3-col grid + category filter pills
+│   │   │   │   └── meal_editor_drawer.dart     ← slide-in drawer (create/edit dish)
 │   │   │   ├── orders/
-│   │   │   │   ├── admin_orders_notifier.dart
-│   │   │   │   ├── order_detail_screen.dart
-│   │   │   │   └── order_list_screen.dart
+│   │   │   │   ├── admin_orders_notifier.dart  ← AdminOrdersNotifier + AdminOrdersState
+│   │   │   │   └── admin_orders_screen.dart    ← filter tabs + list/detail split view
 │   │   │   ├── shell/
-│   │   │   │   └── admin_shell_screen.dart   ← responsive shell (Rail/Bar)
+│   │   │   │   └── admin_shell_screen.dart     ← desktop sidebar shell
 │   │   │   └── widgets/
-│   │   │       ├── admin_stat_card.dart
-│   │   │       ├── color_picker_row.dart
-│   │   │       └── status_chip.dart
+│   │   │       ├── availability_switch.dart    ← animated on/off toggle
+│   │   │       ├── menu_card.dart              ← dish card for menu grid
+│   │   │       ├── notifications_panel.dart    ← bell dropdown (static demo data)
+│   │   │       ├── status_chip.dart            ← customer app order badge (Material colors)
+│   │   │       └── status_pill.dart            ← admin order badge (exact JSX colors)
 │   │   │
 │   │   ├── auth/
-│   │   │   ├── auth_screen.dart              ← login + signup with email/password
+│   │   │   ├── auth_screen.dart              ← login + signup; routes to AdminShell or Shell
 │   │   │   ├── providers/auth_notifier.dart
 │   │   │   └── widgets/auth_text.dart
 │   │   │
@@ -178,8 +171,12 @@ food_delivery/
 │   │   │   └── providers/favorites_notifier.dart
 │   │   │
 │   │   ├── home/
-│   │   │   ├── home_screen.dart              ← tab 0 of ShellScreen
-│   │   │   └── providers/home_notifier.dart
+│   │   │   ├── home_screen.dart              ← tab 0 of ShellScreen (single-restaurant design)
+│   │   │   ├── menu_all_screen.dart          ← full menu with category pills + MealListRow list
+│   │   │   ├── category_grid_screen.dart     ← left-rail + 2-col grid browse view
+│   │   │   ├── providers/home_notifier.dart
+│   │   │   └── widgets/
+│   │   │       └── meal_detail_view.dart     ← MealDetailView + showMealDetail() helper
 │   │   │
 │   │   ├── onboarding/
 │   │   │   ├── data/onboarding_data.dart
@@ -187,9 +184,12 @@ food_delivery/
 │   │   │   └── widgets/pageview_design.dart
 │   │   │
 │   │   ├── orders/
+│   │   │   ├── active_orders_screen.dart    ← list of all active orders; tap → TrackingScreen
 │   │   │   ├── order_history_screen.dart
 │   │   │   ├── order_success_screen.dart
-│   │   │   └── providers/order_history_notifier.dart
+│   │   │   └── providers/
+│   │   │       ├── active_order_notifier.dart   ← activeOrderNotifierProvider (List<OrderModel>)
+│   │   │       └── order_history_notifier.dart
 │   │   │
 │   │   ├── profile/
 │   │   │   ├── profile_screen.dart           ← tab 3 of ShellScreen
@@ -213,7 +213,7 @@ food_delivery/
 │   │   │   └── shell_screen.dart             ← IndexedStack + CustomBottomNavBar
 │   │   │
 │   │   ├── splash/
-│   │   │   └── splash_screen.dart            ← app entry, auth routing
+│   │   │   └── splash_screen.dart            ← app entry, auth routing (admin-aware)
 │   │   │
 │   │   └── tracking/
 │   │       ├── tracking_screen.dart
@@ -234,7 +234,7 @@ food_delivery/
 │   ├── repositories/
 │   │   ├── auth_repository.dart      ← auth + profile upsert on signup
 │   │   ├── cart_repository.dart      ← local only (SharedPreferences)
-│   │   ├── dish_repository.dart      ← Supabase dishes table
+│   │   ├── dish_repository.dart      ← Supabase dishes table + admin CRUD
 │   │   ├── order_repository.dart     ← Supabase orders table
 │   │   ├── profile_repository.dart   ← profiles, addresses, payment_methods
 │   │   └── restaurant_repository.dart ← Supabase restaurants + favorites
@@ -248,8 +248,7 @@ food_delivery/
 │   ├── theme/
 │   │   └── app_theme.dart            ← AppTheme, AppThemeColors ThemeExtension
 │   │
-│   ├── main.dart                     ← customer app entry point
-│   └── main_admin.dart               ← admin panel entry point
+│   └── main.dart                     ← single app entry point (customer + admin)
 │
 ├── supabase/
 │   └── schema.sql                    ← full DB schema + RLS + seed data
@@ -262,14 +261,11 @@ food_delivery/
 
 ## Navigation Map
 
-### App Entry Points
+### App Entry Point
 
-| Entry | File | Description |
-|---|---|---|
-| Customer app | `lib/main.dart` | `runApp(CraveApp())` → `SplashScreen` |
-| Admin panel | `lib/main_admin.dart` | `runApp(AdminApp())` → `AdminLoginScreen` |
+Single entry: `lib/main.dart` → `CraveApp` → `SplashScreen`. There is **no separate admin entry point** — the same app routes to either `ShellScreen` (customer) or `AdminShellScreen` (admin) based on email.
 
-### Customer App — Authentication Flow
+### Authentication Flow
 
 ```
 SplashScreen (2s delay)
@@ -280,14 +276,19 @@ SplashScreen (2s delay)
   │
   ├── onboarding seen, NO session ──────► AuthScreen
   │                                              │
-  │                                              └─ login/signup ──► ShellScreen
+  │                                              ├─ admin email login ──► AdminShellScreen
+  │                                              └─ other email login  ──► ShellScreen
   │
-  └── onboarding seen, session EXISTS ──► ShellScreen
+  └── onboarding seen, session EXISTS
+        ├── email == Env.adminEmail ──────► AdminShellScreen
+        └── other email ─────────────────► ShellScreen
 ```
+
+**Admin email** is set via `ADMIN_EMAIL` in `.env`. The check runs in both `AuthScreen._submitForm()` and `SplashScreen._navigate()`.
 
 ### Customer App — Main Navigation
 
-`ShellScreen` owns the bottom nav bar (`CustomBottomNavBar`) and hosts 5 tabs via `IndexedStack`:
+`ShellScreen` owns the bottom nav bar (`CustomBottomNavBar`) and hosts 4 tabs via `IndexedStack`:
 
 ```
 ShellScreen (tabs)
@@ -320,19 +321,37 @@ Any screen
   └── ChatScreen (Gemini support)
 ```
 
-### AppNavigator Methods (all 17)
+### Admin App — Main Navigation
+
+```
+AdminShellScreen (desktop sidebar shell)
+  ├── [orders tab] AdminOrdersScreen
+  │     ├── Filter tabs: Active | On the way | History
+  │     └── Split view: order list (left) + order detail (right)
+  └── [menu tab]   AdminMenuScreen
+        ├── Category filter pills (horizontal scroll)
+        ├── 3-column dish grid (MenuCard widgets)
+        └── MealEditorDrawer (slide-in overlay — not a separate route)
+              triggered by: adminDishesProvider.editingDishId != null
+```
+
+Admin logout: `Supabase.instance.client.auth.signOut()` → `AppNavigator.toAuth(context)` (in sidebar user card).
+
+### AppNavigator Methods (all 21)
 
 | Method | Behaviour | Destination |
 |---|---|---|
 | `toOnboarding` | `pushReplacement` | OnboardingScreen |
 | `toAuth` | `pushReplacement` | AuthScreen |
 | `toHome` | `pushAndRemoveUntil` (clears stack) | ShellScreen |
+| `toAdminShell` | `pushAndRemoveUntil` (clears stack) | AdminShellScreen |
 | `toCheckout` | `push` | CheckoutScreen |
 | `toTracking(orderId)` | `push` | TrackingScreen |
 | `toRestaurantDetail(restaurantId)` | `push` | RestaurantDetailScreen |
 | `toCart` | `push` | CartScreen |
 | `toChat` | `push` | ChatScreen |
-| `toOrderSuccess(order)` | `pushReplacement` | OrderSuccessScreen |
+| `toOrderSuccess(order)` | `push` | OrderSuccessScreen |
+| `toActiveOrders` | `push` | ActiveOrdersScreen |
 | `toOrderHistory` | `push` | OrderHistoryScreen |
 | `toAddresses` | `push` | AddressScreen |
 | `toPaymentMethods` | `push` | PaymentScreen |
@@ -340,30 +359,11 @@ Any screen
 | `toNotifications` | `push` | NotificationsScreen |
 | `toInvite` | `push` | InviteScreen |
 | `toPreferences` | `push` | PreferencesScreen |
+| `toMenuAll` | `push` | MenuAllScreen — full menu with category pills |
+| `toCategoryGrid` | `push` | CategoryGridScreen — left-rail + grid browse |
 | `back` | `Navigator.pop` | — |
 
-### Admin Navigation Flow
-
-```
-AdminApp (main_admin.dart)
-  └── AdminLoginScreen
-        └── AdminShellScreen (responsive shell)
-              ├── DashboardScreen
-              ├── OrderListScreen → OrderDetailScreen
-              ├── DishListScreen  → DishFormScreen (add/edit)
-              └── CategoryListScreen → CategoryFormScreen (add/edit)
-```
-
-### AdminNavigator Methods
-
-| Method | Destination |
-|---|---|
-| `toAdminLogin` | AdminLoginScreen (clears stack) |
-| `toAdminDashboard` | AdminShellScreen (clears stack) |
-| `toAdminDishForm({dish?})` | DishFormScreen (null = create, non-null = edit) |
-| `toCategoryForm({category?})` | CategoryFormScreen |
-| `toOrderDetail(orderId)` | OrderDetailScreen |
-| `back` | `Navigator.pop` |
+> `admin_navigator.dart` exists as legacy code with a `toAdminDashboard` stub. It is not used — prefer `AppNavigator.toAdminShell`.
 
 ---
 
@@ -385,17 +385,17 @@ AdminApp (main_admin.dart)
 
 | Token | Light Mode | Dark Mode | Usage |
 |---|---|---|---|
-| `ac.background` | `#FFF0E6` (warm cream) | `#1A1714` | Scaffold backgrounds |
+| `ac.background` | `#FFF8F3` (neutral warm white) | `#1A1714` | Scaffold backgrounds |
 | `ac.surface` | `#FFFFFF` (pure white) | `#1C1917` | Cards, input fills |
 | `ac.creamSurface` | `#FCEEE3` | `#26211D` | Stats bar, image fallbacks, category chips |
-| `ac.softAccentSurface` | `#FFE8DC` | `#33261E` | Light orange surfaces |
-| `ac.primaryText` | `#1A1612` (near black) | `#FFF6EF` | Body text, DishCard tag badge |
+| `ac.softAccentSurface` | `#FFE8DC` | `#33261E` | Light orange surfaces; admin onTheWay status bg |
+| `ac.primaryText` | `#1A1612` (near black) | `#FFF6EF` | Body text; admin sidebar bg |
 | `ac.secondaryText` | `#5A4F47` | `#D3C7BE` | Subtitles |
 | `ac.mutedText` | `#8C7E73` | `#A89B91` | Hints, placeholders |
 | `ac.border` | `#EFE7DF` | `#3B332E` | Card/container borders |
-| `ac.navbarBackground` | `#1A1612` (dark) | `#1C1917` | Floating pill nav bar |
+| `ac.navbarBackground` | `#1A1612` (dark) | `#1C1917` | Floating pill nav bar; admin sidebar |
 | `ac.inputFill` | `#FFFFFF` (pure white) | `#1C1917` | TextField fill |
-| `ac.success` | `#2DBE60` | `#4ADE80` | Order status: delivered |
+| `ac.success` | `#2DBE60` | `#4ADE80` | Order status: delivered; availability switch ON |
 | `ac.warning` | `#FFB400` | `#FBBF24` | Warnings |
 | `ac.primaryGradientStart` | `#EF9F27` | `#EF9F27` | Gradient start (orange) |
 | `ac.primaryGradientEnd` | `#D85A30` | `#D85A30` | Gradient end (red-orange) |
@@ -403,14 +403,46 @@ AdminApp (main_admin.dart)
 | `ac.buttonShadow` | 32% orange glow | 40% orange | `GradientButton` shadow |
 | `ac.navbarShadow` | 25% black, 40px blur | 38% black | Bottom nav shadow |
 
-**`AppColors` static constants** (for use outside widgets):
+**`AppColors` static constants** (for colors with no `AppThemeColors` equivalent):
+
 ```dart
+// Gradients
 AppColors.primaryGradientStart  // Color(0xFFEF9F27)
 AppColors.primaryGradientEnd    // Color(0xFFD85A30)
 AppColors.success               // Color(0xFF2DBE60)
 AppColors.warning               // Color(0xFFFFB400)
+
+// Admin status pill — exact JSX statusMeta values
+AppColors.statusNewBg           // Color(0xFFE1F0FF)
+AppColors.statusNewFg           // Color(0xFF2563EB)
+AppColors.statusPreparingBg     // Color(0xFFFFF1D6)
+AppColors.statusPreparingFg     // Color(0xFFB7791F)
+AppColors.statusDeliveredBg     // Color(0xFFE2F6E9)
+AppColors.statusDeliveredFg     // Color(0xFF1F8A4C)
+AppColors.statusCancelledBg     // Color(0xFFFBEAEA)
+AppColors.statusCancelledFg     // Color(0xFFDC2626)
+
+// Admin misc
+AppColors.switchOff             // Color(0xFFD8D0C6)  — availability switch OFF
+AppColors.tagSpicy              // Color(0xFFE14B3B)  — spicy tag badge
+AppColors.adminBackground       // Color(0xFFF7F4EF)  — admin content area bg
+AppColors.storeOpenBorder       // Color(0xFFBFE8CD)  — "Store open" badge border
+
 AppGradients.primary            // LinearGradient(primaryGradientStart → primaryGradientEnd)
 ```
+
+**Admin JSX design token mapping** (`C.xxx` → Flutter equivalent):
+
+| JSX token | Value | Flutter |
+|---|---|---|
+| `C.primary` | `#FF5A1F` | `cs.primary` |
+| `C.ink` | `#1A1612` | `ac.primaryText` / `ac.navbarBackground` |
+| `C.inkSoft` | `#5A4F47` | `ac.secondaryText` |
+| `C.mute` | `#8C7E73` | `ac.mutedText` |
+| `C.line` | `#EFE7DF` | `ac.border` |
+| `C.cream` | `#FCEFE3` | `ac.creamSurface` |
+| `C.primarySoft` | `#FFE8DC` | `ac.softAccentSurface` |
+| `C.success` | `#2DBE60` | `ac.success` |
 
 ### Typography System
 
@@ -463,7 +495,11 @@ final tt = Theme.of(context).textTheme;      // typography
 
 **Providers:** `sharedPrefsProvider`, `isLoggedInProvider`
 
-**Logic:** After 2-second delay: `!onboardingSeen` → Onboarding | `session == null` → Auth | else → ShellScreen
+**Logic:** After 2-second delay:
+- `!onboardingSeen` → Onboarding
+- `session == null` → Auth
+- `session.user.email == Env.adminEmail` → AdminShellScreen
+- else → ShellScreen
 
 **Important Files:** `lib/features/splash/splash_screen.dart`
 
@@ -485,7 +521,7 @@ final tt = Theme.of(context).textTheme;      // typography
 
 ### Auth
 
-**Purpose:** Email/password login and account creation. Wired to Supabase Auth.
+**Purpose:** Email/password login and account creation. Wired to Supabase Auth. Routes to admin or customer shell based on email.
 
 **Screens:** `AuthScreen` — `lib/features/auth/auth_screen.dart`
 
@@ -500,7 +536,9 @@ final tt = Theme.of(context).textTheme;      // typography
 **Flow:**
 1. Login → `AuthRepository.login()` → `AuthService.login()` → Supabase signIn → `_fetchProfile()` → `UserModel`
 2. Signup → `AuthService.signup()` → Supabase signUp → `profiles.upsert()` → `_fetchProfile()` → `UserModel`
-3. On success → `AppNavigator.toHome(context)`
+3. On success:
+   - `_email == Env.adminEmail` → `AppNavigator.toAdminShell(context)`
+   - otherwise → `AppNavigator.toHome(context)`
 
 **Important Files:**
 - `lib/features/auth/auth_screen.dart`
@@ -536,33 +574,52 @@ final tt = Theme.of(context).textTheme;      // typography
 
 ### Home
 
-**Purpose:** Main discovery feed. Shows promo banner, category filter chips, horizontal dish list ("Hot right now"), and vertical restaurant list.
+**Purpose:** Single-restaurant discovery screen. Full-bleed hero image with gradient overlay, restaurant meta strip, sticky category pills, popular dish cards (horizontal), full menu by category (MealListRow), ratings & reviews section, restaurant info section.
 
 **Screens:** `HomeScreen` — `lib/features/home/home_screen.dart`
 
 **Providers:** `homeNotifierProvider` (`HomeNotifier`, `HomeState`)
 
-**Repositories:** `DishRepository`, `RestaurantRepository`
+**Repositories:** `DishRepository` (`getPopularDishesByRestaurant`, `getAllDishesByRestaurant`), `RestaurantRepository` (`getFirstRestaurant`)
 
 **Models:** `DishModel`, `RestaurantModel`, `CategoryModel`
 
 **State:**
 ```dart
 HomeState {
-  restaurants: List<RestaurantModel>   // popular restaurants
-  dishes: List<DishModel>              // popular or filtered dishes
-  categories: List<CategoryModel>      // static list (5 categories)
-  selectedCategoryId: String?          // active filter
+  restaurant: RestaurantModel?         // the single restaurant record
+  popularDishes: List<DishModel>       // popular=true dishes (horizontal row)
+  dishes: List<DishModel>              // filteredMenuDishes — active category or popular
+  menuByCategory: Map<String, List<DishModel>>  // all dishes keyed by categoryId
+  categories: List<CategoryModel>      // fetched from DB (replaces static list)
+  selectedCategoryId: String?          // active filter (null = popular)
   isLoading: bool
   error: String?
 }
+// Getter: filteredMenuDishes → dishes (semantic alias)
 ```
 
-**Categories:** Static in `home_notifier.dart` (not fetched from DB):
-- 1: Burgers 🍔, 2: Pizza 🍕, 3: Asian 🍜, 4: Salads 🥗, 5: Desserts 🍰
+**Methods:** `fetchRestaurantData()` (replaces `fetchAll()`), `selectCategory(String?)`, `toggleDishFavorite(int index)` (operates on popularDishes)
+
+**Categories:** Now fetched from Supabase `categories` table in `fetchRestaurantData()`. `CategoryModel.fromJson` updated with defaults for missing `emoji`/`bg_color`.
+
+**Screen design:**
+- No `SafeArea` on body — hero image extends under status bar
+- `Sliver 1`: Hero Stack 280px (`CachedNetworkImage` + dual gradient overlay + `Positioned` top bar with location tap → `toAddresses`, notification bell → `toNotifications` + `Positioned` bottom with restaurant name `GoogleFonts.bricolageGrotesque(fontSize:32,w800)` + cuisine chip)
+- `Sliver 2`: Meta strip (rating · delivery time · Free delivery) + "See menu →" `TextButton` → `AppNavigator.toMenuAll`
+- `Sliver 2b`: Search bar pill (50px) — `GestureDetector` → `AppNavigator.toMenuAll`
+- `Sliver 2c`: Offer strip — dark `ac.primaryText` background, "The Stack Combo" promo + "Order" button → `AppNavigator.toSearch(query:'burger')`
+- `Sliver 2d`: Active order banner — shown only when `activeOrderNotifierProvider.state.isNotEmpty`; displays count ("You have N active orders"), taps → `AppNavigator.toActiveOrders`
+- `Sliver 3`: Sticky `SliverPersistentHeader(pinned:true)` using `_CategoryPillsDelegate` (52px, "Popular" + DB categories, `AnimatedContainer` selection)
+- `Sliver 4`: Popular row — `SectionHeader` + horizontal `ListView` of `PopularMealCard` (hidden when category selected)
+- `Sliver 5`: Full menu — `_buildAllMenuSlivers` (category headings + `MealListRow` per category) or filtered `SliverList`
+- `Sliver 6`: Ratings & Reviews — "4.8" `GoogleFonts.bricolageGrotesque(fontSize:56)`, 3 hardcoded `_kReviews` as review cards
+- `Sliver 7`: Restaurant Info — address, hours, phone in bordered `Container`
+- `Sliver 8`: `SizedBox(height:104)` bottom padding
 
 **Important Files:**
 - `lib/features/home/home_screen.dart`
+- `lib/features/home/menu_all_screen.dart` (`ConsumerStatefulWidget` — local `_selectedCategoryId` state, reuses `homeNotifierProvider` data)
 - `lib/features/home/providers/home_notifier.dart`
 
 ---
@@ -602,7 +659,7 @@ ref.watch(restaurantDetailProvider(restaurantId))
 
 **Repositories:** `CartRepository` — LOCAL ONLY (SharedPreferences, not Supabase)
 
-**Models:** `CartItemModel`, `DishModel`
+**Models:** `CartItemModel` (+ `selectedSize`, `addonNames`, `unitPriceRs` fields), `DishModel`
 
 **State:** `List<CartItemModel>` (the state IS the cart items list)
 
@@ -611,6 +668,12 @@ ref.watch(restaurantDetailProvider(restaurantId))
 - `deliveryFeeRs` — fixed Rs 50
 - `totalRs` — subtotal + delivery - discount
 - `itemCount` — total quantity of all items
+
+**CartNotifier extra fields (not part of `List<CartItemModel>` state):**
+- `selectedPaymentMethod` (String, default `"Visa"`) — set via `setPaymentMethod(method)`
+- `deliveryAddress` (getter, returns `"Home — DHA Phase 5, Lahore"`)
+
+**`addItem` signature:** `addItem(DishModel dish, {String? selectedSize, List<String> addonNames, int? unitPriceRs})` — quick-add buttons pass no extras (defaults to base price); `MealDetailView` passes selected size, addon names, and the computed `_unitPriceRs`. Same dish + same size → increments quantity. Same dish + different size → separate cart row.
 
 **Promo codes (hardcoded for FYP demo):**
 | Code | Discount |
@@ -681,7 +744,7 @@ ref.watch(restaurantDetailProvider(restaurantId))
 
 **Polling:** `Timer.periodic(15 seconds)` — auto-stops when `status == delivered`
 
-**ETA logic:** `placedAt + 35 minutes` → counts down to "Arriving in ~N min"
+**ETA logic:** `placedAt + 40 minutes` window — shows "Arrives in 30-45 min" for first ~15 min, then counts down to "Arriving in ~N min", then "Arriving any moment"; "Delivered!" on delivery; "Order cancelled" on cancellation
 
 **Courier contact:** Copies phone to clipboard; falls back to chat if no phone
 
@@ -788,7 +851,230 @@ ref.watch(restaurantDetailProvider(restaurantId))
 
 ### Admin Panel
 
-See [Admin Panel](#admin-panel) section below.
+The admin panel is **part of the same Flutter app** — no separate entry point or `main_admin.dart`. Routing is email-gated: login with `Env.adminEmail` goes to `AdminShellScreen`; any other email goes to the customer `ShellScreen`.
+
+#### Shell — `AdminShellScreen`
+
+**File:** `lib/features/admin/shell/admin_shell_screen.dart`
+
+**Layout:** Responsive via `LayoutBuilder` — breakpoint at **600px**:
+
+| Screen width | Layout |
+|---|---|
+| `< 600px` (phone) | `AppBar` + `BottomNavigationBar` + `IndexedStack` body |
+| `≥ 600px` (tablet/desktop) | Fixed sidebar + top bar (original desktop layout) |
+
+**Desktop layout (`≥ 600px`):**
+```
+Scaffold(body: Stack([
+  Row(
+    _AdminSidebar (248px, ac.navbarBackground bg)
+    Column(
+      _AdminTopBar (76px, white bg, border-bottom)
+      Expanded(IndexedStack body, padding 28/24)
+    )
+  )
+  NotificationsPanel overlay (when _showNotif)
+  MealEditorDrawer overlay (SizedBox width:440, when editingDishId != null)
+]))
+```
+
+**Mobile layout (`< 600px`):**
+```
+Scaffold(
+  AppBar (ac.navbarBackground, title+subtitle, add/bell/logout actions)
+  body: Stack([
+    IndexedStack (Padding all:16)
+    MealEditorDrawer overlay (Positioned.fill, when editingDishId != null)
+  ])
+  bottomNavigationBar: _BottomNavItem row
+)
+```
+
+**`_AdminSidebar` (desktop only):**
+- Brand: "S" circle + "Smoke & Stack" / "Merchant console"
+- Nav items: Orders (receipt icon + newOrder badge count) | Menu (kitchen icon)
+- Settings row (decorative)
+- User card: avatar initial, displayName, logout button → `auth.signOut()` + `AppNavigator.toAuth()`
+
+**`_AdminTopBar` (desktop only):**
+- Title/subtitle (changes per tab; menu subtitle reads `adminDishesProvider` for counts)
+- Decorative search pill
+- "Add item" button (menu tab only) → `adminDishesProvider.notifier.openEditor('new')`
+- "Store open" badge (`AppColors.statusDeliveredBg/Fg/storeOpenBorder`)
+- Bell button (42×42) → toggles `_showNotif` → `NotificationsPanel` Stack overlay
+
+**Mobile AppBar actions:**
+- "Add item" Container button (menu tab only)
+- Bell → `showModalBottomSheet` with `NotificationsPanel`
+- Logout icon → `_logout()` method
+
+**Mobile bottom nav (`_BottomNavItem`):**
+- 2 items: Orders (with newOrder badge) + Menu
+- Active: `cs.primary` tint bg + primary-colored icon/label
+- Inactive: transparent bg + 55%-alpha white icon/label
+
+**Tab state:** `int _tabIndex` — `0 = orders`, `1 = menu`; `String get _tab` derives `'orders'`/`'menu'`
+
+**Data fetching:** `initState` uses `Future.microtask` → `fetchOrders()` + `fetchDishes()`
+
+**MealEditorDrawer overlay:**
+- Desktop: `Positioned(top:0, bottom:0, right:0, child: SizedBox(width:440, child: MealEditorDrawer(...)))`
+- Mobile: `Positioned.fill(child: MealEditorDrawer(...))` — takes full screen width
+
+---
+
+#### Orders Screen — `AdminOrdersScreen`
+
+**File:** `lib/features/admin/orders/admin_orders_screen.dart`
+
+**Provider:** `adminOrdersProvider` (`AdminOrdersNotifier`, `AdminOrdersState`)
+
+**Layout (mobile — single column):**
+```
+Column(
+  _FilterTabsRow (Active | On the way | Delivered — horizontally scrollable)
+  SizedBox(14)
+  Expanded(_OrderListCard — full width)
+)
+```
+Tapping a row calls `notifier.selectOrder(id)` then opens `showModalBottomSheet` (82% screen height) containing `_OrderDetailCard`.
+
+**`_OrderListCard`:** `Container(clipBehavior: Clip.hardEdge)` wrapping `ListView.separated` (no desktop header row)
+
+**`_OrderListRow` (mobile layout):**
+```
+Row(avatar 38×38, name+id/time, Spacer, Column(StatusPill, Rs amount), chevron_right)
+```
+
+**`_OrderDetailCard`:** Full `Column` (no outer Container — sheet's `shape`+`clipBehavior` handles rounding):
+- Drag handle at top
+- Order id + time header + `StatusPill`
+- Customer avatar + name + address + phone icon
+- `Expanded(SingleChildScrollView(items list + summary rows))`
+- Status-based action buttons at bottom (each calls `Navigator.pop` after action):
+  - `newOrder` → Reject (outlined) + "Accept & start cooking" (primary, 2/3 width)
+  - `preparing` → "Out for Delivery" (primary, full width, delivery icon)
+  - `on_the_way` → "Mark as Delivered" (green `#2DBE60`, full width, check icon)
+  - `delivered` / `cancelled` → no button
+
+**State:**
+```dart
+AdminOrdersState {
+  orders: List<OrderModel>
+  filterTab: String          // 'active' | 'ontheway' | 'delivered'
+  selectedOrderId: String?
+  isLoading: bool
+  error: String?
+}
+// Extension getters:
+filteredOrders  // orders filtered by filterTab
+selectedOrder   // OrderModel? by selectedOrderId
+```
+
+**Notifier methods:** `fetchOrders()`, `setFilter(tab)`, `selectOrder(id)`, `acceptOrder(id)` (→ preparing), `rejectOrder(id)` (→ cancelled), `markOnTheWay(id)` (→ on_the_way), `markDelivered(id)` (→ delivered)
+
+**Optimistic UI:** All status-change methods update `state.orders` immediately before the Supabase call. On error, rolls back via `fetchOrders()`.
+
+**Auto-selection:** `fetchOrders()` auto-selects first active order if `selectedOrderId` is not yet set.
+
+---
+
+#### Menu Screen — `AdminMenuScreen` + `MealEditorDrawer`
+
+**Files:**
+- `lib/features/admin/menu/admin_menu_screen.dart`
+- `lib/features/admin/menu/meal_editor_drawer.dart`
+
+**Provider:** `adminDishesProvider` (`AdminDishesNotifier`, `AdminDishesState`)
+
+**`AdminMenuScreen` layout:**
+```
+Column(
+  _CategoryFilterRow (horizontal scroll: "All items" + categories from DB)
+  SizedBox(20)
+  Expanded(
+    GridView.builder(crossAxisCount:2, crossAxisSpacing:16, mainAxisSpacing:16, mainAxisExtent:270)
+  )
+)
+```
+
+**Category filter pills:**
+- Active: `ac.primaryText` bg, white text, white-18%-alpha count badge
+- Inactive: white bg, `ac.secondaryText` text, `const Color(0xFFF0EBE3)` count badge
+- Tap → `notifier.setCategory(id)`
+
+**Grid items:** `MenuCard(dish, categoryName, onEdit, onDelete, onToggleAvailability)`
+- `onEdit` → `notifier.openEditor(dish.id)`
+- `onDelete` → `notifier.deleteDish(dish.id)` (optimistic)
+- `onToggleAvailability` → `notifier.toggleAvailability(dish.id, !dish.isAvailable)` (optimistic)
+
+**`MealEditorDrawer`:**
+
+Rendered in `AdminShellScreen`'s `Stack` when `dishesState.editingDishId != null`. Width is determined by the parent `Positioned` — no fixed width inside the widget itself:
+- Desktop: `Positioned(top:0, bottom:0, right:0, child: SizedBox(width:440, child: MealEditorDrawer(...)))`
+- Mobile: `Positioned.fill(child: MealEditorDrawer(...))` — full screen width
+
+`dishId == 'new'` → create mode (empty form, defaults to first category)
+`dishId == UUID` → edit mode (pre-populated from `state.dishes`)
+
+**Fields:** image area (168px, shows `dish.imageUrl` or camera placeholder), item name, price (Rs), calories (kcal), category chip selector, badge chip selector (`'' / 'Bestseller' / 'Spicy' / 'Chef pick' / 'Hot' / 'New'`), description, availability toggle
+
+**Chip styling:** Active chip → `ac.softAccentSurface` bg, `cs.primary` border+text; Inactive → white bg, `ac.border` border, `ac.secondaryText` text
+
+**Save:** builds `fields` map → `createDish(fields)` or `updateDish(dishId, fields)`. Both automatically close the editor on success (`clearEditingDishId: true` in notifier state update).
+
+**State:**
+```dart
+AdminDishesState {
+  dishes: List<DishModel>
+  categories: List<({String id, String name})>  // fetched from 'categories' table
+  selectedCategoryId: String  // 'all' or a UUID
+  editingDishId: String?      // null=closed, 'new'=creating, UUID=editing
+  isLoading: bool
+  error: String?
+}
+// Extension getters:
+displayedDishes   // filtered by selectedCategoryId
+availableCount    // count of isAvailable dishes
+restaurantId      // first dish's restaurantId (used when creating new dish)
+```
+
+**`fetchDishes()`** fetches both dishes (via `DishRepository`) and categories (directly via Supabase `_db.from('categories').select('id, name').order('name')`).
+
+**Notifier methods:** `fetchDishes()`, `setCategory(id)`, `openEditor(dishId)`, `closeEditor()`, `toggleAvailability(id, val)`, `deleteDish(id)`, `createDish(fields)`, `updateDish(id, fields)`
+
+---
+
+#### Admin Widgets
+
+All in `lib/features/admin/widgets/`:
+
+| Widget | Purpose | File |
+|---|---|---|
+| `StatusPill` | Admin order status badge — exact JSX colors, dot + label | `status_pill.dart` |
+| `AvailabilitySwitch` | Animated 42×24 toggle — green (`AppColors.success`) / gray (`AppColors.switchOff`) | `availability_switch.dart` |
+| `MenuCard` | Dish card for menu grid — 130px image, tag badge, name, cat/kcal, price, availability row | `menu_card.dart` |
+| `NotificationsPanel` | Bell dropdown overlay — static demo data, 380px wide | `notifications_panel.dart` |
+| `StatusChip` | **Customer app** order status badge — uses Material color scheme (not admin-specific colors) | `status_chip.dart` |
+
+`StatusPill` vs `StatusChip`:
+- `StatusPill` — used in `AdminOrdersScreen`; exact JSX `statusMeta` colors from `AppColors`
+- `StatusChip` — used in `OrderHistoryScreen` (customer app); uses `cs.primary`, `cs.tertiary`, `cs.error`
+
+---
+
+#### Admin Auth Routing
+
+| Condition | Action |
+|---|---|
+| Login success, `email == Env.adminEmail` | `AppNavigator.toAdminShell(context)` |
+| Login success, other email | `AppNavigator.toHome(context)` |
+| Splash, session exists, `email == Env.adminEmail` | `AppNavigator.toAdminShell(context)` |
+| Splash, session exists, other email | `AppNavigator.toHome(context)` |
+| Admin logout (sidebar) | `Supabase.auth.signOut()` → `AppNavigator.toAuth(context)` |
+
+**Required `.env` key:** `ADMIN_EMAIL=your-admin@email.com`
 
 ---
 
@@ -807,6 +1093,7 @@ See [Admin Panel](#admin-panel) section below.
 | `profileNotifierProvider` | `ProfileNotifier` | `ProfileState` | `features/profile/providers/profile_notifier.dart` |
 | `restaurantDetailProvider` | `RestaurantDetailNotifier` (family) | `RestaurantDetailState` | `features/restaurant/providers/restaurant_detail_notifier.dart` |
 | `trackingNotifierProvider` | `TrackingNotifier` | `TrackingState` | `features/tracking/providers/tracking_notifier.dart` |
+| `activeOrderNotifierProvider` | `ActiveOrderNotifier` | `List<OrderModel>` | `features/orders/providers/active_order_notifier.dart` |
 | `orderHistoryNotifierProvider` | `OrderHistoryNotifier` | order history state | `features/orders/providers/order_history_notifier.dart` |
 | `favoritesNotifierProvider` | `FavoritesNotifier` | favorites state | `features/favorites/providers/favorites_notifier.dart` |
 | `chatNotifierProvider` | `ChatNotifier` | `ChatState` | `features/chat/providers/chat_notifier.dart` |
@@ -824,10 +1111,8 @@ See [Admin Panel](#admin-panel) section below.
 
 | Provider | Notifier | State Type | Location |
 |---|---|---|---|
-| `adminDashboardNotifierProvider` | `DashboardNotifier` | `DashboardState` | `features/admin/dashboard/dashboard_notifier.dart` |
-| `adminOrdersNotifierProvider` | `AdminOrdersNotifier` | `AdminOrdersState` | `features/admin/orders/admin_orders_notifier.dart` |
-| `adminDishesNotifierProvider` | `AdminDishesNotifier` | `AdminDishesState` | `features/admin/dishes/admin_dishes_notifier.dart` |
-| `adminCategoriesNotifierProvider` | `AdminCategoriesNotifier` | categories state | `features/admin/categories/admin_categories_notifier.dart` |
+| `adminOrdersProvider` | `AdminOrdersNotifier` | `AdminOrdersState` | `features/admin/orders/admin_orders_notifier.dart` |
+| `adminDishesProvider` | `AdminDishesNotifier` | `AdminDishesState` | `features/admin/dishes/admin_dishes_notifier.dart` |
 
 ### Family Notifier Pattern
 
@@ -857,7 +1142,7 @@ ref.read(restaurantDetailProvider(restaurantId).notifier).refresh()
 |---|---|---|---|
 | `AuthRepository` | `authRepositoryProvider` | Supabase auth + profile creation on signup | Supabase Auth + `profiles` table |
 | `CartRepository` | `cartRepositoryProvider` | Cart persistence | Local — SharedPreferences only |
-| `DishRepository` | `dishRepositoryProvider` | Dish CRUD + favorites | Supabase `dishes` + `favorites` |
+| `DishRepository` | `dishRepositoryProvider` | Dish CRUD + favorites + admin CRUD | Supabase `dishes` + `favorites` |
 | `OrderRepository` | `orderRepositoryProvider` | Place order, history, tracking, status update | Supabase `orders` |
 | `ProfileRepository` | `profileRepositoryProvider` | Profile + addresses + payment methods | Supabase `profiles`, `addresses`, `payment_methods` |
 | `RestaurantRepository` | `restaurantRepositoryProvider` | Restaurant list + search + favorites | Supabase `restaurants` + `favorites` |
@@ -868,22 +1153,32 @@ ref.read(restaurantDetailProvider(restaurantId).notifier).refresh()
 - `getPopularDishes()` — top 20 dishes
 - `getDishesByCategory(categoryId)` — filtered by category
 - `getDishesByRestaurant(restaurantId)` — for restaurant detail screen
+- `getPopularDishesByRestaurant(restaurantId)` — popular=true, limit 10 (home popular row)
+- `getAllDishesByRestaurant(restaurantId)` — is_available=true, ordered by category_id (full menu)
 - `getFavoriteDishes()` — joins `favorites` → `dishes`
 - `toggleFavoriteDish(dishId)` — insert/delete in `favorites`
+- `getAllDishes()` — all dishes ordered by `created_at desc` (admin)
+- `toggleAvailability(dishId, newValue)` — admin availability toggle
+- `deleteDish(dishId)` — admin delete
+- `createDish(fields)` → `DishModel` — admin create
+- `updateDish(dishId, fields)` → `DishModel` — admin update
 
 **RestaurantRepository:**
 - `getPopularRestaurants()` — top 20 by rating
 - `searchRestaurants(query)` — ilike name search
-- `getRestaurantById(id)` — single restaurant
+- `getRestaurantById(id)` — single restaurant by ID
+- `getFirstRestaurant()` — fetches the single restaurant (limit 1) for single-restaurant home
 - `getFavoriteRestaurants()` — joins `favorites` → `restaurants`
 - `toggleFavorite(restaurantId)` — insert/delete in `favorites`
 
 **OrderRepository:**
 - `placeOrder({items, deliveryAddress, paymentMethodId, deliveryFeeRs, discountRs})` → `OrderModel`
 - `getOrderHistory()` — user's orders desc by placed_at
-- `getActiveOrder()` — latest non-delivered order (placed/preparing/picked)
+- `getActiveOrders()` — all non-delivered orders for current user (status IN new/preparing/on_the_way), ordered by placed_at desc; returns `List<OrderModel>`
 - `trackOrder(orderId)` → `OrderModel`
 - `updateStatus(orderId, status)` — admin use
+- `getAllOrdersAdmin()` — all orders (admin, ordered by placed_at desc)
+- `updateOrderStatus(orderId, status)` — admin status update
 
 **ProfileRepository:**
 - `getProfile()`, `updateProfile(name, phone, avatarUrl?)`
@@ -900,7 +1195,7 @@ ref.read(restaurantDetailProvider(restaurantId).notifier).refresh()
 |---|---|
 | **Purpose** | Primary database, authentication, and storage backend |
 | **Env vars** | `SUPABASE_URL`, `SUPABASE_ANON_KEY` |
-| **Init** | `main.dart` — `Supabase.initialize(url:, publishableKey:)` |
+| **Init** | `main.dart` — `Supabase.initialize(url:, anonKey:)` |
 | **Client** | `Supabase.instance.client` — used directly in all repositories |
 | **Auth** | `_db.auth.signInWithPassword()` / `signUp()` / `signOut()` |
 | **Database** | `_db.from('table').select()/.insert()/.update()/.delete()` |
@@ -942,12 +1237,13 @@ All variables live in `.env` at the project root (never committed to git). Acces
 
 ```dart
 class Env {
-  static String get supabaseUrl       => dotenv.env['SUPABASE_URL'] ?? '';
-  static String get supabaseAnonKey   => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
-  static String get geminiApiKey      => dotenv.env['GEMINI_API_KEY'] ?? '';
+  static String get supabaseUrl          => dotenv.env['SUPABASE_URL'] ?? '';
+  static String get supabaseAnonKey      => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+  static String get geminiApiKey         => dotenv.env['GEMINI_API_KEY'] ?? '';
   static String get stripePublishableKey => dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
-  static String get stripeSecretKey   => dotenv.env['STRIPE_SECRET_KEY'] ?? '';
-  static String get baseUrl           => dotenv.env['BASE_URL'] ?? '';
+  static String get stripeSecretKey      => dotenv.env['STRIPE_SECRET_KEY'] ?? '';
+  static String get baseUrl              => dotenv.env['BASE_URL'] ?? '';
+  static String get adminEmail           => dotenv.env['ADMIN_EMAIL'] ?? '';
 }
 ```
 
@@ -961,6 +1257,7 @@ class Env {
 | `STRIPE_PUBLISHABLE_KEY` | Stripe Dashboard → Developers → API keys | `pk_test_...` for dev |
 | `STRIPE_SECRET_KEY` | Stripe Dashboard → Developers → API keys | `sk_test_...` — used client-side (FYP only) |
 | `BASE_URL` | Your API server (if any) | Optional — Dio base URL |
+| `ADMIN_EMAIL` | Your admin account email | Routes login to AdminShellScreen |
 
 **Template** (`.env.example`, safe to commit):
 ```
@@ -970,6 +1267,7 @@ GEMINI_API_KEY=your-gemini-key
 STRIPE_PUBLISHABLE_KEY=pk_test_your-key
 STRIPE_SECRET_KEY=sk_test_your-key
 BASE_URL=https://your-api.com
+ADMIN_EMAIL=admin@yourrestaurant.com
 ```
 
 ---
@@ -981,7 +1279,8 @@ See full SQL in `supabase/schema.sql`. Run it once in Supabase Dashboard → SQL
 | Table | Purpose | Key columns |
 |---|---|---|
 | `restaurants` | Restaurant listings | `id`, `name`, `cuisine_tags[]`, `rating`, `delivery_time_min`, `min_order_rs` |
-| `dishes` | Menu items | `id`, `name`, `restaurant_id`, `restaurant_name`, `price_rs`, `calories`, `tag`, `category_id` |
+| `dishes` | Menu items | `id`, `name`, `restaurant_id`, `restaurant_name`, `price_rs`, `calories`, `tag`, `category_id`, `description`, `is_available`, `rating`, `prep_time_min`, `popular` |
+| `categories` | Menu categories | `id`, `name` (fetched by admin panel for filter pills and MealEditor) |
 | `profiles` | Extended user data (linked to auth.users) | `id`, `full_name`, `email`, `phone`, `avatar_url`, `total_orders`, `points` |
 | `addresses` | Saved delivery addresses per user | `id`, `user_id`, `label`, `full_address`, `lat`, `lng`, `is_default` |
 | `payment_methods` | Saved payment methods per user | `id`, `user_id`, `type` (card/cash/wallet), `label`, `last_four`, `is_default` |
@@ -994,77 +1293,9 @@ See full SQL in `supabase/schema.sql`. Run it once in Supabase Dashboard → SQL
 
 **Auto-trigger:** `handle_new_user()` creates a `profiles` row on every new Supabase Auth signup.
 
-**OrderStatus enum values:** `placed` | `preparing` | `picked` | `delivered`
+**OrderStatus enum values (in code):** `newOrder` | `preparing` | `onTheWay` | `delivered` | `cancelled`
 
 **PaymentType enum values:** `card` | `cash` | `wallet`
-
----
-
-## Admin Panel
-
-The admin panel is a **separate Flutter app** sharing the same codebase.
-
-**Entry point:** `lib/main_admin.dart` → `AdminApp` → `AdminLoginScreen`
-
-**Shell:** `AdminShellScreen` — responsive layout:
-- **≥ 600px width** → `NavigationRail` (sidebar, for tablet/desktop)
-- **< 600px width** → `NavigationBar` (bottom bar, for phone)
-
-### Dashboard
-
-**Screen:** `lib/features/admin/dashboard/dashboard_screen.dart`
-
-**Provider:** `adminDashboardNotifierProvider`
-
-**Displays:**
-- Stat cards: Total Users, Total Orders, Total Revenue, Total Dishes
-- Recent orders list (last 5)
-
-**Data sources:** Counts from `profiles`, `orders`, `dishes` tables
-
-### Order Management
-
-**Screens:**
-- `OrderListScreen` — `lib/features/admin/orders/order_list_screen.dart`
-- `OrderDetailScreen(orderId)` — `lib/features/admin/orders/order_detail_screen.dart`
-
-**Provider:** `adminOrdersNotifierProvider` (`AdminOrdersNotifier`, `AdminOrdersState`)
-
-**Features:**
-- List all orders, sorted by `placed_at` descending
-- Search by order ID or restaurant name
-- Filter by `OrderStatus` (`placed` / `preparing` / `picked` / `delivered`)
-- Update order status in-place
-
-### Menu Management (Dishes)
-
-**Screens:**
-- `DishListScreen` — `lib/features/admin/dishes/dish_list_screen.dart`
-- `DishFormScreen({dish?})` — `lib/features/admin/dishes/dish_form_screen.dart`
-
-**Provider:** `adminDishesNotifierProvider`
-
-**Features:**
-- List all dishes with search
-- Add new dish (DishFormScreen with `dish == null`)
-- Edit dish (DishFormScreen with `dish != null`)
-- Delete dish (with optimistic UI update)
-
-### Category Management
-
-**Screens:**
-- `CategoryListScreen` — `lib/features/admin/categories/category_list_screen.dart`
-- `CategoryFormScreen({category?})` — `lib/features/admin/categories/category_form_screen.dart`
-
-**Provider:** `adminCategoriesNotifierProvider`
-
-**Features:** Add, edit, delete menu categories.
-
-### Admin Authentication
-
-**Screen:** `AdminLoginScreen` — `lib/features/admin/auth/admin_login_screen.dart`
-
-**Provider:** admin auth notifier — `lib/features/admin/auth/admin_auth_notifier.dart`
 
 ---
 
@@ -1074,8 +1305,8 @@ All in `lib/core/widgets/`.
 
 | Widget | Purpose | File |
 |---|---|---|
-| `DishCard` | Dish card with padding-all-around, floating 18px-radius image, favorite toggle (primary orange when active, ink when inactive), add-to-cart | `dish_card.dart` |
-| `DishCardSkeleton` | Shimmer loading placeholder for DishCard (matches new layout: padding + floating image) | `skeleton_loader.dart` |
+| `DishCard` | Dish card with padding-all-around, floating 18px-radius image, favorite toggle, add-to-cart | `dish_card.dart` |
+| `DishCardSkeleton` | Shimmer loading placeholder for DishCard | `skeleton_loader.dart` |
 | `RestaurantCard` | Restaurant listing card with cuisine tags, rating, ETA | `restaurant_card.dart` |
 | `RestaurantCardSkeleton` | Shimmer loading placeholder for RestaurantCard | `restaurant_card.dart` |
 | `CategoryChip` | Tappable category filter chip with emoji icon | `category_chip.dart` |
@@ -1091,24 +1322,28 @@ All in `lib/core/widgets/`.
 | `EmptyStateWidget` | Empty state with icon, title, subtitle | `empty_state_widget.dart` |
 | `ErrorStateWidget` | Error message with retry callback | `error_state_widget.dart` |
 | `SkeletonBox` | Shimmer placeholder box (configurable size) | `skeleton_loader.dart` |
+| `MealListRow` | Horizontal dish row (72×72 image, name/desc/⭐ rating·time/price, add button) | `meal_list_row.dart` |
+| `PopularMealCard` | 160×240 dish card (image stack+badge, name, ⭐ rating·kcal, price, add circle) | `popular_meal_card.dart` |
 
 **Admin-only widgets** in `lib/features/admin/widgets/`:
 
-| Widget | Purpose | File |
+| Widget | Purpose | Used by |
 |---|---|---|
-| `AdminStatCard` | Dashboard metric card (icon, label, value) | `admin_stat_card.dart` |
-| `StatusChip` | Coloured order status badge | `status_chip.dart` |
-| `ColorPickerRow` | Category colour picker | `color_picker_row.dart` |
+| `StatusPill` | Admin order status badge (exact JSX colors, dot + label) | `AdminOrdersScreen` |
+| `AvailabilitySwitch` | Animated 42×24 on/off toggle | `MenuCard`, `MealEditorDrawer` |
+| `MenuCard` | Full dish card for 3-col grid (image, tag overlay, details, toggle) | `AdminMenuScreen` |
+| `NotificationsPanel` | Bell overlay (380px, static demo data) | `AdminShellScreen` |
+| `StatusChip` | Customer app order status badge (Material colors) | `OrderHistoryScreen` |
 
 ---
 
 ## Known Limitations
 
-1. **`.env` credentials required** — placeholder values cause runtime failures; the app cannot function without real Supabase/Gemini/Stripe keys.
+1. **`.env` credentials required** — placeholder values cause runtime failures; the app cannot function without real Supabase/Gemini/Stripe keys. Add `ADMIN_EMAIL` to use the admin panel.
 
-2. **Google OAuth not implemented** — the "Continue with Google" button shows a SnackBar. Full OAuth via Supabase would require deep link handling.
+2. **Google OAuth not implemented** — the "Continue with Google" button navigates directly to `ShellScreen` as a dev shortcut. Full OAuth via Supabase would require deep link handling.
 
-3. **Static menu categories** — the 5 home screen categories (Burgers, Pizza, Asian, Salads, Desserts) are hardcoded in `home_notifier.dart`, not fetched from Supabase. The `category_id` field in `dishes` is a plain string that matches these IDs (`'1'`–`'5'`).
+3. **Menu categories now live (customer home)** — categories are fetched from the Supabase `categories` table in `fetchRestaurantData()`. `CategoryModel.fromJson` uses null-safe defaults (`emoji='🍽'`, `bgColor=0xFFFFE8DC`) for missing columns.
 
 4. **No push notifications** — order status changes are shown only when the user is on the tracking screen (polling) or refreshes manually.
 
@@ -1122,7 +1357,11 @@ All in `lib/core/widgets/`.
 
 9. **`BASE_URL` env var** — defined in `Env` and `dio_provider.dart` but Dio is not used for the main data flow (Supabase client handles all DB calls).
 
-10. **Single restaurant** — the app is designed for exactly one restaurant. There is no multi-tenant restaurant management. Admin restaurant CRUD is explicitly out of scope.
+10. **Single restaurant** — the app is designed for exactly one restaurant. The admin panel restaurant name ("Smoke & Stack") is hardcoded. `restaurant_id` for new dishes is inferred from the first existing dish in `adminDishesProvider.state.restaurantId`.
+
+11. **Image upload (MealEditor)** — fully implemented. `MealEditorDrawer` uses `image_picker ^1.1.2` to pick from device gallery, uploads binary to Supabase Storage bucket `dish-images` (public), and stores the CDN URL in `dish.image_url`. Android: `READ_MEDIA_IMAGES` / `READ_EXTERNAL_STORAGE` permissions in `AndroidManifest.xml`. iOS: `NSPhotoLibraryUsageDescription` in `Info.plist`.
+
+12. **Admin panel is responsive** — `AdminShellScreen` uses `LayoutBuilder` to switch at 600px: phone gets AppBar + bottom nav, tablet/desktop gets the full sidebar layout.
 
 ---
 
@@ -1186,6 +1425,7 @@ All in `lib/core/widgets/`.
 1. Edit `lib/theme/app_theme.dart` only
 2. To add a new `AppThemeColors` token: add field to the class, add to both `lightTheme()` and `darkTheme()` calls, add to `copyWith()` and `lerp()`
 3. Never add theme logic to individual screen files
+4. New color constants with no `AppThemeColors` equivalent → add to `AppColors` in `app_colors.dart`
 
 ---
 
@@ -1200,7 +1440,8 @@ When an AI agent works on this project:
 3. **Preserve these non-negotiable constraints:**
    - Only `Provider<T>` and `NotifierProvider<T, S>` — never FutureProvider, StreamProvider, StateProvider, AsyncNotifierProvider
    - Standard `Navigator` only — never go_router
-   - `AppThemeColors` tokens (`ac.xxx`) — never hardcode `Color(0xFF...)`
+   - `AppThemeColors` tokens (`ac.xxx`) — never hardcode `Color(0xFF...)` in widget files
+   - New color constants → `AppColors` in `app_colors.dart` — never inline in widgets
    - `AppDimensions` — never hardcode pixel values
    - All secrets via `Env.xxx` — never hardcode in source files
    - Dart 3 wildcard `(_, _)` — never `(_, _2)` or `(_, __)`
@@ -1214,11 +1455,13 @@ When an AI agent works on this project:
 
 5. **After every code change, run `flutter analyze --no-pub` and fix all issues before reporting done.**
 
-6. **Navigation is centralised.** Never call `Navigator.push(...)` in a screen directly. Always use `AppNavigator` (customer) or `AdminNavigator` (admin).
+6. **Navigation is centralised.** Never call `Navigator.push(...)` in a screen directly. Always use `AppNavigator` (both customer and admin screens use `AppNavigator`).
 
 7. **The bottom nav bar is in `ShellScreen`, not in any tab screen.** Never add `bottomNavigationBar` to `HomeScreen`, `FavoritesScreen`, `CartScreen`, or `ProfileScreen`.
 
-8. **The admin panel (`main_admin.dart`) is a separate entry point.** Changes to admin screens should not affect the customer app and vice versa.
+8. **Admin and customer are the same app.** The routing split happens in `AuthScreen` and `SplashScreen` based on `Env.adminEmail`. Do not create a separate `main_admin.dart`.
+
+9. **`MealEditorDrawer` is rendered in `AdminShellScreen`'s Stack**, not as a separate route. It is driven by `adminDishesProvider.editingDishId` — set via `openEditor(id)` / `closeEditor()` on the notifier.
 
 ---
 
@@ -1226,7 +1469,7 @@ When an AI agent works on this project:
 
 | Field | Value |
 |---|---|
-| **Date** | 2026-06-07 |
+| **Date** | 2026-06-16 |
 | **Flutter Analyze** | ✅ No issues (`flutter analyze --no-pub`) |
-| **Recent Changes** | Theme colors aligned to design spec; DishCard layout updated (floating image); nav bar expanded to 5 tabs (AI Chat added at index 3); ChatScreen no longer has explicit back button (auto-implied); `cs.primary` forced to exact `#FF5A1F` via `.copyWith()`; background warmed to `#FFF0E6` |
-| **Remaining Blocker** | `.env` credentials (Gemini key required for AI Chat to work) |
+| **Recent Changes** | [Profile stats fix] (1) `profile_repository.dart`: replaced `Future.wait<dynamic>([...])` with sequential typed `await` calls for profile, orders, and favorites queries — eliminates type-coercion failures that silently made the whole fetch throw. (2) `profile_notifier.dart`: `updateProfile()`, `updateAvatar()`, and `_uploadAvatar()` all now call `fetchProfile()` after the update instead of `state = ProfileState(user: repositoryResult)` — the repository's `updateProfile` returns the raw profile row (which has 0 for live stats), so using `fetchProfile()` preserves the live counts. (3) `profile_screen.dart`: added `RefreshIndicator` wrapping `SingleChildScrollView` — user can pull down to refresh stats after placing orders or adding favorites. [Previous session] | [Order status progression + ETA] (1) `admin_orders_notifier.dart`: added `markOnTheWay(id)` (→ on_the_way) and `markDelivered(id)` (→ delivered) — both optimistic, roll back via `fetchOrders()` on error. (2) `admin_orders_screen.dart`: `_OrderDetailCard` action buttons are now status-aware — `newOrder`: Reject + Accept (existing); `preparing`: "Out for Delivery" full-width primary button; `on_the_way`: "Mark as Delivered" full-width green button; `delivered`/`cancelled`: no button. `showDetail` passes two new callbacks `onMarkOnTheWay` and `onMarkDelivered`. (3) `tracking_screen.dart`: `_computeEta` updated — uses `placedAt + 40 min` window; shows "Arrives in 30-45 min" for first ~15 min, then counts down, then "Arriving any moment"; handles `cancelled` status. [Active Orders + Tracking fixes] (1) `order_repository.dart`: `getActiveOrder()` → `getActiveOrders()` returning `List<OrderModel>`; uses `.inFilter('status', ['new','preparing','on_the_way'])` list query (removes `.maybeSingle()` 406 error). (2) `active_order_notifier.dart` (NEW): `NotifierProvider<ActiveOrderNotifier, List<OrderModel>>`; `build()` returns `[]` and fires `Future.microtask(refresh)`; `refresh()` fetches and sets state. (3) `active_orders_screen.dart` (NEW): `ConsumerWidget` listing all active orders with `RefreshIndicator`; `_ActiveOrderCard` taps to `AppNavigator.toTracking`. (4) `app_navigator.dart`: added `toActiveOrders` (method 21). (5) `home_screen.dart`: `_HomeScreenState` now mixes in `RouteAware`; `initState` fires `Future.microtask(() => refresh())`; `didChangeDependencies` subscribes to `routeObserver`; `didPopNext` calls `refresh()`; banner now shows count and navigates to `toActiveOrders`. (6) `main.dart`: added global `RouteObserver<ModalRoute<void>> routeObserver`; wired to `MaterialApp.navigatorObservers`. (7) `tracking_notifier.dart` (REWRITTEN): `ref.onDispose` moved to `build()` (fixes Riverpod 2.x Bad-state error); old timer cancelled before new one (fixes timer accumulation); state reset to loading on `startTracking` (fixes stale loading spinner); `_trackedOrderId` guard prevents stale async responses. (8) `tracking_screen.dart`: added error state UI (icon + message + Retry button) between spinner and map. (9) `dish_model.dart`: JSONB cast `as int?` → `(as num?)?.toInt()`. (10) `cart_item_model.dart`: JSONB cast `as int` → `(as num).toInt()`. [Phase 4.3 fix] Wired `MealDetailView` customisation through to cart: (1) `CartItemModel` — added `unitPriceRs` field (defaults to `dish.priceRs`); `totalPriceRs = unitPriceRs × quantity`; `fromJson`/`toJson`/`copyWith` updated; removed `const` from constructor. (2) `CartRepository.addItem` — extended with `selectedSize`, `addonNames`, `unitPriceRs` optional params; dedup now matches on `dish.id + selectedSize` so different sizes are separate rows. (3) `CartNotifier.addItem` — extended with same optional params, passes through to repo. (4) `MealDetailView._addToCart` — now passes `selectedSize: _selectedSize`, `addonNames: _selectedAddons.toList()`, `unitPriceRs: _unitPriceRs`. (5) `CartScreen` — cart item subtitle shows selected size + add-on count (e.g. "Double · 2 extras") instead of restaurantName when size is set. [Verification] End-to-end JSX design verification pass: (1) `MealListRow` — added ⭐ rating · X min row below description; replaced hardcoded `12` → `AppDimensions.radiusSm` for ClipRRect/fallback; replaced `SizedBox(height:4)` → `AppDimensions.xs`. (2) `PopularMealCard` — added ⭐ rating · kcal meta row between name and price. (3) `HomeScreen` — added Sliver 2b (search bar pill, 50px, taps → `toMenuAll`) and Sliver 2c (offer strip, dark ink bg, "The Stack Combo" + tappable "Order" button → `toMenuAll`); notifications bell icon wired to `AppNavigator.toNotifications`; fixed `SizedBox(height:6)` → `AppDimensions.xs`, `SizedBox(width:12)` → `AppDimensions.radiusSm`. (4) `MealDetailView` — added `Rs price` to title row (right side); moved tag badge to below-name position. (5) `AI_PROJECT_CONTEXT.md` — AppNavigator count 18→20, added `toCategoryGrid` to methods table, `toMenuAll` description updated, `menu_all_screen.dart`/`category_grid_screen.dart` added to folder tree, HomeScreen sliver list updated, widget descriptions updated. [Phase 7] Regression verified: `dart analyze lib/` zero issues, no old enum/field refs, no raw `Navigator.push` in screens, ShellScreen 4 tabs unchanged, admin screens unaffected, `flutter build apk --debug` ✅. [Phase 5.5] `CartScreen` updated: delivery address row (`notifier.deliveryAddress` + "Change" → `AppNavigator.toAddresses`), collapsed promo banner (`_promoExpanded` toggle, expands to show text field), "Pay with" chips (Visa/Apple Pay/Wallet, local `_paymentMethod` state synced to `notifier.selectedPaymentMethod`), button text "Proceed to checkout" → "Place order". Hardcoded `Color(0xFF2DBE60)` → `ac.success`. [Phase 5.4] `FavoritesScreen` redesigned: header "Your favorites" → "Saved & loved"; filter row: All/Dishes/Kitchens + new "Lists" pill; GridView of DishCard → `_FavoriteDishRow` vertical list (image + name/desc/price + ❤ remove + 🛒 add-to-cart); `_KitchenRow` replaces `RestaurantCard`; Lists tab shows "No lists yet" empty state; `isEmpty` via Dart 3 switch expression; `_FilterChip` → `_FilterPill` using `ac.xxx`/`AppDimensions` tokens. [Phase 5.3] `CategoryGridScreen` created: `ConsumerStatefulWidget`, split-pane `Row` layout — left 80px category rail (`AnimatedContainer` with primary left-border + tinted bg, emoji + name), `VerticalDivider`, right `Expanded` `GridView.builder(crossAxisCount:2, childAspectRatio:0.70)` of `PopularMealCard`; defaults to first category without `setState`; loading/error states. `AppNavigator.toCategoryGrid` added (method 20). Phase 6 AppNavigator additions now complete. [Phase 5.2] `MenuAllScreen` fully implemented: `ConsumerStatefulWidget` with local `_selectedCategoryId`; AppBar + back arrow; horizontal `AnimatedContainer` category pills ("All" + DB categories, 52px row); `CustomScrollView` with `SliverFillRemaining` for loading/error; `_buildAllSlivers` (category emoji+name headings + `MealListRow` per category) for all view; filtered `SliverList` for single category; `showMealDetail` + `cartNotifier.addItem` wired. [Phase 5.1] `HomeScreen` completely redesigned: full-bleed 280px hero with gradient overlay, top bar, restaurant name (Bricolage Grotesque 32px), meta strip, sticky `SliverPersistentHeader` category pills (`_CategoryPillsDelegate`, 52px), popular cards horizontal row (`PopularMealCard`), full menu slivers by category (`MealListRow`), ratings & reviews (3 mock, 4.8 avg), restaurant info (address/hours/phone). `SafeArea` removed. `AppNavigator.toMenuAll` added → `MenuAllScreen` stub created. (1) `HomeScreen`: `SafeArea(bottom:false)` moved to wrap the entire `Scaffold.body` — was only on first sliver, causing status-bar overlap. (2) `supabase/schema.sql`: full rewrite — now starts with `drop table if exists … cascade` for all tables, seed dishes include `image_url` (30 Unsplash CDN URLs), storage bucket `dish-images` created with public-read + auth-write policies. (3) `MealEditorDrawer`: `image_picker ^1.1.2` wired up — gallery pick → Supabase Storage binary upload → CDN URL stored in `image_url`. (4) `pubspec.yaml`: `image_picker: ^1.1.2` added. (5) Android `READ_MEDIA_IMAGES` permission + iOS `NSPhotoLibraryUsageDescription` added. (10) [Phase 4] New widgets: `MealListRow` (core/widgets), `PopularMealCard` (core/widgets), `MealDetailView` + `showMealDetail()` (features/home/widgets). MealDetailView: ConsumerStatefulWidget, DraggableScrollableSheet, size selector (Single/Double/Triple with price), spice level chips, addon checkboxes, sticky add-to-cart bar. (9) [Phase 3] `home_notifier.dart`: full rewrite — removed static categories + `restaurants` list; added `restaurant`, `popularDishes`, `menuByCategory` to `HomeState`; `fetchAll` → `fetchRestaurantData()`; categories now fetched from DB. `favorites_notifier.dart`: `FavoritesFilter.restaurants` → `.kitchens`, added `.lists`; `FavoritesState` gains `lists` field. `cart_notifier.dart`: added `selectedPaymentMethod`, `deliveryAddress`, `setPaymentMethod()`. `category_model.dart`: `fromJson` now uses defaults for missing `emoji`/`bg_color`. `favorites_screen.dart` + `home_screen.dart`: updated to compile with new state shapes. (8) [Phase 2] `dish_repository.dart`: added `getPopularDishesByRestaurant(restaurantId)` (popular=true, limit 10) and `getAllDishesByRestaurant(restaurantId)` (available only, ordered by category_id). `restaurant_repository.dart`: added `getFirstRestaurant()` — fetches the single restaurant row (limit 1). (7) [Phase 1] `cart_item_model.dart`: added `selectedSize` (String?) and `addonNames` (List\<String\>) fields with `fromJson`/`toJson`/`copyWith` support — enables MealDetailView size+addon selections to be stored in cart. (6) [Phase 0] `app_theme.dart`: light `ac.background` updated from `#FFF0E6` to `#FFF8F3` (new JSX `C.bg` token). Typography (Bricolage Grotesque + DM Sans) and `creamSurface (#FCEFE3)` were already correct; `ac.primaryText (#1A1612)` serves as `C.ink`. `google_fonts ^8.1.0` already in pubspec. |
+| **Remaining Blockers** | `.env` credentials required (Supabase, Gemini, Stripe, `ADMIN_EMAIL`) |

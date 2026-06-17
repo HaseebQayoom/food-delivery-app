@@ -27,11 +27,13 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
 
   String _computeEta(DateTime? placedAt, OrderStatus status) {
     if (status == OrderStatus.delivered) return 'Delivered!';
+    if (status == OrderStatus.cancelled) return 'Order cancelled';
     if (placedAt == null) return 'Arriving soon';
-    final etaTime = placedAt.add(const Duration(minutes: 35));
+    final etaTime = placedAt.add(const Duration(minutes: 40));
     final remaining = etaTime.difference(DateTime.now()).inMinutes;
-    if (remaining <= 0) return 'Arriving any moment';
-    return 'Arriving in ~$remaining min';
+    if (remaining > 25) return 'Arrives in 30-45 min';
+    if (remaining > 0) return 'Arriving in ~$remaining min';
+    return 'Arriving any moment';
   }
 
   Future<void> _onPhoneTap(BuildContext context, OrderModel? order) async {
@@ -78,7 +80,31 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
     return Scaffold(
       body: state.isLoading && order == null
           ? const Center(child: CircularProgressIndicator())
-          : Stack(
+          : state.error != null && order == null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppDimensions.xl),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.error_outline_rounded,
+                            size: 48, color: cs.error),
+                        const SizedBox(height: AppDimensions.md),
+                        Text(state.error!,
+                            textAlign: TextAlign.center,
+                            style: tt.bodyMedium),
+                        const SizedBox(height: AppDimensions.md),
+                        FilledButton(
+                          onPressed: () => ref
+                              .read(trackingNotifierProvider.notifier)
+                              .startTracking(widget.orderId),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Stack(
               children: [
                 // Map — top 55 % of screen
                 SizedBox(
@@ -167,7 +193,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                                   Text(
                                     _computeEta(
                                       order?.placedAt,
-                                      order?.status ?? OrderStatus.placed,
+                                      order?.status ?? OrderStatus.newOrder,
                                     ),
                                     style: tt.titleLarge!.copyWith(
                                         fontWeight: FontWeight.w800),
@@ -175,7 +201,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                                   const Spacer(),
                                   _StatusBadge(
                                       status: order?.status ??
-                                          OrderStatus.placed),
+                                          OrderStatus.newOrder),
                                 ],
                               ),
                               const SizedBox(height: 4),
@@ -190,7 +216,7 @@ class _TrackingScreenState extends ConsumerState<TrackingScreen> {
                               // Order status timeline
                               _Timeline(
                                   status: order?.status ??
-                                      OrderStatus.placed),
+                                      OrderStatus.newOrder),
 
                               const SizedBox(height: AppDimensions.lg),
 
@@ -297,7 +323,7 @@ class _StatusBadge extends StatelessWidget {
     final ac = Theme.of(context).extension<AppThemeColors>()!;
     final color = status == OrderStatus.delivered
         ? ac.success
-        : status == OrderStatus.picked
+        : status == OrderStatus.onTheWay
             ? cs.tertiary
             : cs.primary;
     return Container(
@@ -320,10 +346,13 @@ class _Timeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final steps = OrderStatus.values
-        .where((s) => s != OrderStatus.delivered)
-        .toList()
-      ..add(OrderStatus.delivered);
+    // Explicit happy-path steps — excludes cancelled
+    final steps = [
+      OrderStatus.newOrder,
+      OrderStatus.preparing,
+      OrderStatus.onTheWay,
+      OrderStatus.delivered,
+    ];
     final current = steps.indexOf(status);
     final cs = Theme.of(context).colorScheme;
 

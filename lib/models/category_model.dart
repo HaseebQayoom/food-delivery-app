@@ -17,9 +17,10 @@ class CategoryModel {
     return CategoryModel(
       id: json['id'] as String,
       name: json['name'] as String,
-      emoji: json['emoji'] as String,
-      // bg_color stored as ARGB int in the database
-      bgColor: Color(json['bg_color'] as int),
+      emoji: json['emoji'] as String? ?? '🍽',
+      bgColor: json['bg_color'] != null
+          ? Color(json['bg_color'] as int)
+          : const Color(0xFFFFE8DC),
     );
   }
 

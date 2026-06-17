@@ -32,9 +32,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
-      body: Center(
+      body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.only(left: 20, right: 20, top: 50),
+          padding: const EdgeInsets.only(left: 20, right: 20, top: 16),
           child: Column(
             children: [
               SizedBox(
@@ -72,7 +72,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       ),
                     ),
                     const Spacer(),
-                    // Circular forward button
                     Container(
                       height: 56,
                       width: 56,

@@ -1,30 +1,62 @@
 import 'package:food_delivery/models/cart_item_model.dart';
 
 enum OrderStatus {
-  placed,
+  newOrder,
   preparing,
-  picked,
-  delivered;
+  onTheWay,
+  delivered,
+  cancelled;
 
-  static OrderStatus fromJson(String value) {
-    return OrderStatus.values.firstWhere(
-      (s) => s.name == value,
-      orElse: () => OrderStatus.placed,
-    );
+  static OrderStatus fromJson(String value) => _statusFromDb(value);
+
+  static OrderStatus _statusFromDb(String value) {
+    switch (value) {
+      case 'placed':
+      case 'new':
+        return OrderStatus.newOrder;
+      case 'preparing':
+        return OrderStatus.preparing;
+      case 'picked':
+      case 'on_the_way':
+        return OrderStatus.onTheWay;
+      case 'delivered':
+        return OrderStatus.delivered;
+      case 'cancelled':
+        return OrderStatus.cancelled;
+      default:
+        return OrderStatus.newOrder;
+    }
   }
 
-  String toJson() => name;
+  String toDbString() {
+    switch (this) {
+      case OrderStatus.newOrder:
+        return 'new';
+      case OrderStatus.preparing:
+        return 'preparing';
+      case OrderStatus.onTheWay:
+        return 'on_the_way';
+      case OrderStatus.delivered:
+        return 'delivered';
+      case OrderStatus.cancelled:
+        return 'cancelled';
+    }
+  }
+
+  String toJson() => toDbString();
 
   String get label {
     switch (this) {
-      case OrderStatus.placed:
-        return 'Order placed';
+      case OrderStatus.newOrder:
+        return 'New Order';
       case OrderStatus.preparing:
         return 'Preparing';
-      case OrderStatus.picked:
-        return 'On the way';
+      case OrderStatus.onTheWay:
+        return 'On the Way';
       case OrderStatus.delivered:
         return 'Delivered';
+      case OrderStatus.cancelled:
+        return 'Cancelled';
     }
   }
 }

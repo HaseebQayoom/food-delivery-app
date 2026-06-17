@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_delivery/core/constants/app_colors.dart';
@@ -22,7 +23,9 @@ class ProfileScreen extends ConsumerWidget {
       backgroundColor: ac.background,
       body: state.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+          : RefreshIndicator(
+              onRefresh: () => ref.read(profileNotifierProvider.notifier).fetchProfile(),
+              child: SingleChildScrollView(
               child: Column(
                 children: [
                   // Gradient header
@@ -42,34 +45,42 @@ class ProfileScreen extends ConsumerWidget {
                         child: Column(
                           children: [
                             // Avatar
-                            Stack(
-                              children: [
-                                Container(
-                                  width: 80,
-                                  height: 80,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: Colors.white.withValues(alpha: 0.3),
-                                    border: Border.all(color: Colors.white, width: 2),
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      user != null ? Helpers.getInitials(user.fullName) : '?',
-                                      style: tt.headlineMedium!.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                            GestureDetector(
+                              onTap: () => _showAvatarPicker(context, ref, cs, user?.avatarUrl),
+                              child: Stack(
+                                children: [
+                                  Container(
+                                    width: 80,
+                                    height: 80,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: _resolveAvatarColor(user?.avatarUrl, cs),
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                    child: ClipOval(
+                                      child: _isImageUrl(user?.avatarUrl)
+                                          ? CachedNetworkImage(
+                                              imageUrl: user!.avatarUrl!,
+                                              fit: BoxFit.cover,
+                                              errorWidget: (context, _, _) =>
+                                                  _initialsWidget(user.fullName, tt),
+                                            )
+                                          : _initialsWidget(
+                                              user?.fullName ?? '', tt),
                                     ),
                                   ),
-                                ),
-                                Positioned(
-                                  right: 0,
-                                  bottom: 0,
-                                  child: Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(shape: BoxShape.circle, color: cs.primary, border: Border.all(color: Colors.white, width: 1.5)),
-                                    child: const Icon(Icons.edit, size: 12, color: Colors.white),
+                                  Positioned(
+                                    right: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(shape: BoxShape.circle, color: cs.primary, border: Border.all(color: Colors.white, width: 1.5)),
+                                      child: const Icon(Icons.edit, size: 12, color: Colors.white),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                             const SizedBox(height: AppDimensions.sm),
                             Text(user?.fullName ?? 'Guest', style: tt.titleLarge!.copyWith(color: Colors.white)),
@@ -147,6 +158,186 @@ class ProfileScreen extends ConsumerWidget {
                 ],
               ),
             ),
+          ),
+    );
+  }
+
+
+  static bool _isImageUrl(String? url) =>
+      url != null &&
+      (url.startsWith('http://') || url.startsWith('https://'));
+
+  static Widget _initialsWidget(String name, TextTheme tt) => Center(
+        child: Text(
+          name.isNotEmpty ? Helpers.getInitials(name) : '?',
+          style: tt.headlineMedium!
+              .copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+        ),
+      );
+
+  static Color _resolveAvatarColor(String? avatarUrl, ColorScheme cs) {
+    if (avatarUrl == null || _isImageUrl(avatarUrl)) {
+      return Colors.white.withValues(alpha: 0.3);
+    }
+    // Legacy avatar:N codes or unrecognised values — use a generic tint
+    return cs.primaryContainer;
+  }
+
+  // Animated avatar presets — DiceBear API (free, no key, PNG output)
+  static const _kPresetAvatars = [
+    'https://api.dicebear.com/9.x/fun-emoji/png?seed=crave1&size=200',
+    'https://api.dicebear.com/9.x/fun-emoji/png?seed=crave2&size=200',
+    'https://api.dicebear.com/9.x/fun-emoji/png?seed=crave3&size=200',
+    'https://api.dicebear.com/9.x/fun-emoji/png?seed=crave4&size=200',
+    'https://api.dicebear.com/9.x/bottts/png?seed=crave1&size=200',
+    'https://api.dicebear.com/9.x/bottts/png?seed=crave2&size=200',
+    'https://api.dicebear.com/9.x/bottts/png?seed=crave3&size=200',
+    'https://api.dicebear.com/9.x/bottts/png?seed=crave4&size=200',
+    'https://api.dicebear.com/9.x/thumbs/png?seed=crave1&size=200',
+    'https://api.dicebear.com/9.x/thumbs/png?seed=crave2&size=200',
+    'https://api.dicebear.com/9.x/thumbs/png?seed=crave3&size=200',
+    'https://api.dicebear.com/9.x/thumbs/png?seed=crave4&size=200',
+  ];
+
+  void _showAvatarPicker(
+      BuildContext context, WidgetRef ref, ColorScheme cs, String? current) {
+    final ac = Theme.of(context).extension<AppThemeColors>()!;
+    final tt = Theme.of(context).textTheme;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppDimensions.radiusLg)),
+      ),
+      builder: (sheetContext) => DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.65,
+        minChildSize: 0.4,
+        maxChildSize: 0.9,
+        builder: (_, scrollCtrl) => Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppDimensions.lg, AppDimensions.md, AppDimensions.lg, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: AppDimensions.md),
+                  decoration: BoxDecoration(
+                    color: ac.border,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              Text('Choose avatar', style: tt.titleMedium),
+              const SizedBox(height: AppDimensions.md),
+              // Photo source buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: _SourceButton(
+                      icon: Icons.photo_library_outlined,
+                      label: 'Gallery',
+                      cs: cs,
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        ref
+                            .read(profileNotifierProvider.notifier)
+                            .uploadAvatarFromGallery();
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.sm),
+                  Expanded(
+                    child: _SourceButton(
+                      icon: Icons.camera_alt_outlined,
+                      label: 'Camera',
+                      cs: cs,
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        ref
+                            .read(profileNotifierProvider.notifier)
+                            .uploadAvatarFromCamera();
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppDimensions.lg),
+              Text('Animated avatars',
+                  style: tt.labelMedium?.copyWith(color: ac.mutedText)),
+              const SizedBox(height: AppDimensions.sm),
+              Expanded(
+                child: GridView.builder(
+                  controller: scrollCtrl,
+                  gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    crossAxisSpacing: AppDimensions.sm,
+                    mainAxisSpacing: AppDimensions.sm,
+                    childAspectRatio: 1,
+                  ),
+                  itemCount: _kPresetAvatars.length,
+                  itemBuilder: (_, i) {
+                    final url = _kPresetAvatars[i];
+                    final isSelected = current == url;
+                    return GestureDetector(
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        ref
+                            .read(profileNotifierProvider.notifier)
+                            .updateAvatar(url);
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 150),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected
+                                ? cs.primary
+                                : Colors.transparent,
+                            width: 3,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: cs.primary.withValues(alpha: 0.35),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  )
+                                ]
+                              : null,
+                        ),
+                        child: ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: url,
+                            fit: BoxFit.cover,
+                            placeholder: (_, _) => Container(
+                              color: ac.creamSurface,
+                              child: Icon(Icons.person_rounded,
+                                  color: ac.mutedText, size: 28),
+                            ),
+                            errorWidget: (_, _, _) => Container(
+                              color: ac.creamSurface,
+                              child: Icon(Icons.person_rounded,
+                                  color: ac.mutedText, size: 28),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: AppDimensions.xl),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -190,6 +381,50 @@ class _SectionLabel extends StatelessWidget {
               color: Theme.of(context).colorScheme.onSurfaceVariant,
               letterSpacing: 1.2,
             ),
+      ),
+    );
+  }
+}
+
+class _SourceButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final ColorScheme cs;
+  final VoidCallback onTap;
+
+  const _SourceButton({
+    required this.icon,
+    required this.label,
+    required this.cs,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: cs.primary.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: cs.primary, size: 22),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: cs.primary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
