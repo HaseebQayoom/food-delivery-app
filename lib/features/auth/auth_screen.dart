@@ -17,6 +17,7 @@ class AuthScreen extends ConsumerStatefulWidget {
 class _AuthScreenState extends ConsumerState<AuthScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _isLogin = true;
+  bool _obscurePassword = true;
 
   String _name = '';
   String _email = '';
@@ -56,6 +57,24 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     final cs = Theme.of(context).colorScheme;
     final authState = ref.watch(authNotifierProvider);
     final isLoading = authState.isLoading;
+
+    ref.listen<AuthState>(authNotifierProvider, (_, next) {
+      if (next.error != null) {
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Login Failed'),
+            content: const Text('Your entered email or password is wrong. Please try again.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    });
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -176,9 +195,20 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                         cs: cs,
                         label: 'PASSWORD',
                         hint: '••••••••',
-                        obscureText: true,
+                        obscureText: _obscurePassword,
                         validator: Validators.password,
                         onSaved: (v) => _password = v!,
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_rounded
+                                : Icons.visibility_rounded,
+                            size: 20,
+                            color: cs.onSurfaceVariant,
+                          ),
+                          onPressed: () =>
+                              setState(() => _obscurePassword = !_obscurePassword),
+                        ),
                       ),
 
                       SizedBox(
@@ -187,21 +217,6 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
                             : MediaQuery.of(context).size.height / 11,
                       ),
 
-                      // Error message
-                      if (authState.error != null) ...[
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            authState.error!,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: cs.error,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
 
                       // Submit button
                       ElevatedButton.icon(
@@ -306,6 +321,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
     required void Function(String?) onSaved,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
+    Widget? suffixIcon,
   }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -342,6 +358,7 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
             fontWeight: FontWeight.bold,
             letterSpacing: 1.0,
           ),
+          suffixIcon: suffixIcon,
           floatingLabelBehavior: FloatingLabelBehavior.always,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,

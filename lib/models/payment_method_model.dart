@@ -28,7 +28,9 @@ class PaymentMethodModel {
   final String id;
   final PaymentType type;
   final String label;
-  final String? lastFour; // last 4 digits for card type
+  final String? lastFour;
+  final String? stripePaymentMethodId;
+  final String? stripeCustomerId;
   final bool isDefault;
 
   const PaymentMethodModel({
@@ -36,6 +38,8 @@ class PaymentMethodModel {
     required this.type,
     required this.label,
     this.lastFour,
+    this.stripePaymentMethodId,
+    this.stripeCustomerId,
     this.isDefault = false,
   });
 
@@ -45,6 +49,8 @@ class PaymentMethodModel {
       type: PaymentType.fromJson(json['type'] as String),
       label: json['label'] as String,
       lastFour: json['last_four'] as String?,
+      stripePaymentMethodId: json['stripe_pm_id'] as String?,
+      stripeCustomerId: json['stripe_customer_id'] as String?,
       isDefault: json['is_default'] as bool? ?? false,
     );
   }
@@ -54,6 +60,8 @@ class PaymentMethodModel {
         'type': type.toJson(),
         'label': label,
         'last_four': lastFour,
+        'stripe_pm_id': stripePaymentMethodId,
+        'stripe_customer_id': stripeCustomerId,
         'is_default': isDefault,
       };
 
@@ -62,6 +70,8 @@ class PaymentMethodModel {
     PaymentType? type,
     String? label,
     String? lastFour,
+    String? stripePaymentMethodId,
+    String? stripeCustomerId,
     bool? isDefault,
   }) {
     return PaymentMethodModel(
@@ -69,6 +79,8 @@ class PaymentMethodModel {
       type: type ?? this.type,
       label: label ?? this.label,
       lastFour: lastFour ?? this.lastFour,
+      stripePaymentMethodId: stripePaymentMethodId ?? this.stripePaymentMethodId,
+      stripeCustomerId: stripeCustomerId ?? this.stripeCustomerId,
       isDefault: isDefault ?? this.isDefault,
     );
   }

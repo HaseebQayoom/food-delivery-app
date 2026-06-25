@@ -7,6 +7,7 @@ class Env {
   static String get supabaseUrl => dotenv.env['SUPABASE_URL'] ?? '';
   static String get supabaseAnonKey => dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   static String get geminiApiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
+  static String get groqApiKey => dotenv.env['GROQ_API_KEY'] ?? '';
   static String get stripePublishableKey => dotenv.env['STRIPE_PUBLISHABLE_KEY'] ?? '';
   static String get stripeSecretKey => dotenv.env['STRIPE_SECRET_KEY'] ?? '';
   static String get adminEmail => dotenv.env['ADMIN_EMAIL'] ?? '';

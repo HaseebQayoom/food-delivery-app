@@ -24,11 +24,25 @@ class ProfileRepository {
 
     final favList = await _db
         .from('favorites')
-        .select('id')
-        .eq('user_id', userId);
+        .select('dish_id')
+        .eq('user_id', userId)
+        .eq('type', 'dish');
+
+    final favDishIds = (favList as List)
+        .map((e) => e['dish_id'] as String?)
+        .whereType<String>()
+        .toList();
+
+    int favCount = 0;
+    if (favDishIds.isNotEmpty) {
+      final existing = await _db
+          .from('dishes')
+          .select('id')
+          .filter('id', 'in', '(${favDishIds.join(',')})');
+      favCount = (existing as List).length;
+    }
 
     final ordersCount = ordersList.length;
-    final favCount = favList.length;
     final points = ordersCount * 50;
 
     if (data == null) {

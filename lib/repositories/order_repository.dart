@@ -9,7 +9,6 @@ class OrderRepository {
   Future<OrderModel> placeOrder({
     required List<CartItemModel> items,
     required String deliveryAddress,
-    required String paymentMethodId,
     int deliveryFeeRs = 50,
     int discountRs = 0,
   }) async {

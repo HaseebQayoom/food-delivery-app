@@ -9,7 +9,6 @@ import 'package:food_delivery/features/cart/providers/cart_notifier.dart';
 import 'package:food_delivery/features/checkout/providers/checkout_notifier.dart';
 import 'package:food_delivery/features/profile/address/providers/address_notifier.dart';
 import 'package:food_delivery/features/profile/payment/providers/payment_notifier.dart';
-import 'package:food_delivery/models/address_model.dart';
 import 'package:food_delivery/models/payment_method_model.dart';
 import 'package:food_delivery/theme/app_theme.dart';
 
@@ -26,24 +25,23 @@ class CheckoutScreen extends ConsumerWidget {
     final tt = Theme.of(context).textTheme;
     final ac = Theme.of(context).extension<AppThemeColors>()!;
 
-    final addresses = addressState.addresses;
-    final payments = paymentState.methods;
-
-    // Auto-select defaults the first time data arrives
-    if (checkoutState.selectedAddress == null && addresses.isNotEmpty) {
+    // Auto-select defaults when data loads
+    if (checkoutState.selectedAddress == null &&
+        addressState.addresses.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final def = addresses.firstWhere(
+        final def = addressState.addresses.firstWhere(
           (a) => a.isDefault,
-          orElse: () => addresses.first,
+          orElse: () => addressState.addresses.first,
         );
         ref.read(checkoutNotifierProvider.notifier).selectAddress(def);
       });
     }
-    if (checkoutState.selectedPayment == null && payments.isNotEmpty) {
+    if (checkoutState.selectedPayment == null &&
+        paymentState.methods.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final def = payments.firstWhere(
+        final def = paymentState.methods.firstWhere(
           (p) => p.isDefault,
-          orElse: () => payments.first,
+          orElse: () => paymentState.methods.first,
         );
         ref.read(checkoutNotifierProvider.notifier).selectPayment(def);
       });
@@ -66,48 +64,33 @@ class CheckoutScreen extends ConsumerWidget {
           // ── Delivery Address ──────────────────────────────────────
           _SectionLabel(label: 'DELIVERY ADDRESS'),
           const SizedBox(height: AppDimensions.sm),
-
-          if (addressState.isLoading)
-            _LoadingRow(label: 'Loading addresses…', ac: ac)
-          else if (addresses.isEmpty)
-            _EmptySection(
-              message: 'No saved addresses yet.',
-              actionLabel: 'Add address',
-              onAction: () => AppNavigator.toAddresses(context),
-              cs: cs,
-              ac: ac,
-            )
-          else
-            ...addresses.map((addr) => _AddressTile(
-                  address: addr,
-                  isSelected: checkoutState.selectedAddress?.id == addr.id,
-                  onTap: () =>
-                      ref.read(checkoutNotifierProvider.notifier).selectAddress(addr),
-                )),
+          _SummaryTile(
+            icon: Icons.location_on_outlined,
+            title: checkoutState.selectedAddress?.label ?? 'No address selected',
+            subtitle: checkoutState.selectedAddress?.fullAddress,
+            isEmpty: checkoutState.selectedAddress == null,
+            emptyLabel: 'Add address',
+            isLoading: addressState.isLoading,
+            onChangeTap: () => AppNavigator.toAddresses(context),
+            cs: cs,
+            ac: ac,
+          ),
 
           const SizedBox(height: AppDimensions.lg),
 
           // ── Payment Method ────────────────────────────────────────
           _SectionLabel(label: 'PAYMENT METHOD'),
           const SizedBox(height: AppDimensions.sm),
-
-          if (paymentState.isLoading)
-            _LoadingRow(label: 'Loading payment methods…', ac: ac)
-          else if (payments.isEmpty)
-            _EmptySection(
-              message: 'No payment methods saved.',
-              actionLabel: 'Add payment method',
-              onAction: () => AppNavigator.toPaymentMethods(context),
-              cs: cs,
-              ac: ac,
-            )
-          else
-            ...payments.map((pm) => _PaymentTile(
-                  method: pm,
-                  isSelected: checkoutState.selectedPayment?.id == pm.id,
-                  onTap: () =>
-                      ref.read(checkoutNotifierProvider.notifier).selectPayment(pm),
-                )),
+          _SummaryTile(
+            icon: _paymentIcon(checkoutState.selectedPayment?.type),
+            title: checkoutState.selectedPayment?.label ?? 'No payment method selected',
+            isEmpty: checkoutState.selectedPayment == null,
+            emptyLabel: 'Add payment method',
+            isLoading: paymentState.isLoading,
+            onChangeTap: () => AppNavigator.toPaymentMethods(context),
+            cs: cs,
+            ac: ac,
+          ),
 
           const SizedBox(height: AppDimensions.lg),
 
@@ -156,21 +139,19 @@ class CheckoutScreen extends ConsumerWidget {
           TextFormField(
             maxLines: 3,
             maxLength: 200,
-            onChanged: ref.read(checkoutNotifierProvider.notifier).setInstructions,
+            onChanged:
+                ref.read(checkoutNotifierProvider.notifier).setInstructions,
             decoration: InputDecoration(
               hintText: 'Any special requests for the kitchen?',
-              hintStyle:
-                  tt.bodySmall!.copyWith(color: cs.onSurfaceVariant),
+              hintStyle: tt.bodySmall!.copyWith(color: cs.onSurfaceVariant),
               filled: true,
               fillColor: ac.creamSurface,
               border: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.radiusMd),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
                 borderSide: BorderSide(color: ac.border),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius:
-                    BorderRadius.circular(AppDimensions.radiusMd),
+                borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
                 borderSide: BorderSide(color: ac.border),
               ),
             ),
@@ -215,8 +196,9 @@ class CheckoutScreen extends ConsumerWidget {
                 'Place order — ${Helpers.formatRs(cartNotifier.totalRs + checkoutState.tipRs)}',
             isLoading: checkoutState.isPlacingOrder,
             onPressed: () async {
-              final order =
-                  await ref.read(checkoutNotifierProvider.notifier).placeOrder();
+              final order = await ref
+                  .read(checkoutNotifierProvider.notifier)
+                  .placeOrder();
               if (order != null && context.mounted) {
                 AppNavigator.toOrderSuccess(context, order: order);
               }
@@ -228,9 +210,116 @@ class CheckoutScreen extends ConsumerWidget {
       ),
     );
   }
+
+  IconData _paymentIcon(PaymentType? type) {
+    return switch (type) {
+      PaymentType.cash => Icons.payments_outlined,
+      PaymentType.wallet => Icons.account_balance_wallet_outlined,
+      _ => Icons.credit_card_outlined,
+    };
+  }
 }
 
-// ── Shared section label ──────────────────────────────────────────────────────
+// ── Summary tile (address or payment — single row with Change button) ──────────
+
+class _SummaryTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? subtitle;
+  final bool isEmpty;
+  final String emptyLabel;
+  final bool isLoading;
+  final VoidCallback onChangeTap;
+  final ColorScheme cs;
+  final AppThemeColors ac;
+
+  const _SummaryTile({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    required this.isEmpty,
+    required this.emptyLabel,
+    required this.isLoading,
+    required this.onChangeTap,
+    required this.cs,
+    required this.ac,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+
+    return GestureDetector(
+      onTap: onChangeTap,
+      child: Container(
+        padding: const EdgeInsets.all(AppDimensions.md),
+        decoration: BoxDecoration(
+          color: ac.creamSurface,
+          borderRadius: BorderRadius.circular(AppDimensions.radiusMd),
+          border: Border.all(color: isEmpty ? cs.error.withValues(alpha: 0.4) : ac.border),
+        ),
+        child: isLoading
+            ? Row(
+                children: [
+                  const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(width: 12),
+                  Text('Loading…',
+                      style: tt.bodySmall
+                          ?.copyWith(color: cs.onSurfaceVariant)),
+                ],
+              )
+            : Row(
+                children: [
+                  Icon(icon,
+                      size: 20,
+                      color: isEmpty ? cs.onSurfaceVariant : cs.primary),
+                  const SizedBox(width: AppDimensions.sm),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: tt.titleSmall?.copyWith(
+                            color: isEmpty
+                                ? cs.onSurfaceVariant
+                                : cs.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (subtitle != null)
+                          Text(
+                            subtitle!,
+                            style: tt.bodySmall
+                                ?.copyWith(color: cs.onSurfaceVariant),
+                          ),
+                      ],
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: onChangeTap,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: Text(
+                      isEmpty ? emptyLabel : 'Change',
+                      style: tt.labelMedium?.copyWith(
+                          color: cs.primary, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+// ── Section label ─────────────────────────────────────────────────────────────
 
 class _SectionLabel extends StatelessWidget {
   final String label;
@@ -244,191 +333,6 @@ class _SectionLabel extends StatelessWidget {
             color: Theme.of(context).colorScheme.onSurfaceVariant,
             letterSpacing: 1.2,
           ),
-    );
-  }
-}
-
-// ── Loading placeholder ───────────────────────────────────────────────────────
-
-class _LoadingRow extends StatelessWidget {
-  final String label;
-  final AppThemeColors ac;
-  const _LoadingRow({required this.label, required this.ac});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ac.creamSurface,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-          const SizedBox(width: 12),
-          Text(label,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall!
-                  .copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Empty section with add CTA ────────────────────────────────────────────────
-
-class _EmptySection extends StatelessWidget {
-  final String message;
-  final String actionLabel;
-  final VoidCallback onAction;
-  final ColorScheme cs;
-  final AppThemeColors ac;
-  const _EmptySection({
-    required this.message,
-    required this.actionLabel,
-    required this.onAction,
-    required this.cs,
-    required this.ac,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: ac.creamSurface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ac.border),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(message,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall!
-                    .copyWith(color: cs.onSurfaceVariant)),
-          ),
-          TextButton(
-            onPressed: onAction,
-            child: Text(actionLabel,
-                style: TextStyle(color: cs.primary, fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Address tile ──────────────────────────────────────────────────────────────
-
-class _AddressTile extends StatelessWidget {
-  final AddressModel address;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _AddressTile(
-      {required this.address, required this.isSelected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final ac = Theme.of(context).extension<AppThemeColors>()!;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? cs.primaryContainer : ac.creamSurface,
-          borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: isSelected ? cs.primary : ac.border),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.location_on_outlined,
-                size: 18,
-                color: isSelected ? cs.primary : cs.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(address.label,
-                      style: Theme.of(context).textTheme.titleSmall),
-                  Text(address.fullAddress,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodySmall!
-                          .copyWith(color: cs.onSurfaceVariant)),
-                ],
-              ),
-            ),
-            if (isSelected) Icon(Icons.check_circle, color: cs.primary, size: 18),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Payment tile ──────────────────────────────────────────────────────────────
-
-class _PaymentTile extends StatelessWidget {
-  final PaymentMethodModel method;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _PaymentTile(
-      {required this.method, required this.isSelected, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final ac = Theme.of(context).extension<AppThemeColors>()!;
-    final icon = method.type == PaymentType.cash
-        ? Icons.payments_outlined
-        : method.type == PaymentType.card
-            ? Icons.credit_card_outlined
-            : Icons.account_balance_wallet_outlined;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? cs.primaryContainer : ac.creamSurface,
-          borderRadius: BorderRadius.circular(12),
-          border:
-              Border.all(color: isSelected ? cs.primary : ac.border),
-        ),
-        child: Row(
-          children: [
-            Icon(icon,
-                size: 18,
-                color: isSelected ? cs.primary : cs.onSurfaceVariant),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                method.lastFour != null
-                    ? '${method.label} ••••${method.lastFour}'
-                    : method.label,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-            ),
-            if (isSelected) Icon(Icons.check_circle, color: cs.primary, size: 18),
-          ],
-        ),
-      ),
     );
   }
 }

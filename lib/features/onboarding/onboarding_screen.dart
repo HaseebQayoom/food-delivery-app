@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_delivery/core/navigation/app_navigator.dart';
+import 'package:food_delivery/core/providers/shared_prefs_provider.dart';
 import 'package:food_delivery/features/onboarding/data/onboarding_data.dart';
 import 'package:food_delivery/features/onboarding/widgets/pageview_design.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
+  ConsumerState<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   late final PageController _pageController;
   int _currentIndex = 0;
 
@@ -89,6 +91,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: IconButton(
                         onPressed: () {
                           if (_currentIndex == onboardingData.length - 1) {
+                            ref.read(sharedPrefsProvider).setBool(StorageKeys.onboardingSeen, true);
                             AppNavigator.toAuth(context);
                           } else {
                             _pageController.animateToPage(

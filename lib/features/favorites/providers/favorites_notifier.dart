@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:food_delivery/features/profile/providers/profile_notifier.dart';
 import 'package:food_delivery/models/dish_model.dart';
 import 'package:food_delivery/models/restaurant_model.dart';
 import 'package:food_delivery/repositories/dish_repository.dart';
@@ -53,7 +54,12 @@ class FavoritesNotifier extends Notifier<FavoritesState> {
     state = state.copyWith(isLoading: true, error: null);
     try {
       final dishes = await ref.read(dishRepositoryProvider).getFavoriteDishes();
-      final restaurants = await ref.read(restaurantRepositoryProvider).getFavoriteRestaurants();
+      List<RestaurantModel> restaurants = [];
+      try {
+        restaurants = await ref
+            .read(restaurantRepositoryProvider)
+            .getFavoriteRestaurants();
+      } catch (_) {}
       state = state.copyWith(dishes: dishes, restaurants: restaurants, isLoading: false);
     } catch (e) {
       state = state.copyWith(isLoading: false, error: 'Could not load favorites.');
@@ -69,11 +75,13 @@ class FavoritesNotifier extends Notifier<FavoritesState> {
     state = state.copyWith(
       dishes: [...state.dishes, dish.copyWith(isFavorite: true)],
     );
+    ref.read(profileNotifierProvider.notifier).fetchProfile();
   }
 
   Future<void> removeFavoriteDish(String dishId) async {
     await ref.read(dishRepositoryProvider).toggleFavoriteDish(dishId);
     state = state.copyWith(dishes: state.dishes.where((d) => d.id != dishId).toList());
+    ref.read(profileNotifierProvider.notifier).fetchProfile();
   }
 
   Future<void> toggleFavoriteDish(DishModel dish) async {

@@ -49,26 +49,44 @@ class DishRepository {
   Future<List<DishModel>> getFavoriteDishes() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return [];
-    final data = await _db
+
+    final favRows = await _db
         .from('favorites')
-        .select('dishes(*)')
+        .select('dish_id')
         .eq('user_id', userId)
         .eq('type', 'dish');
+
+    final dishIds = (favRows as List)
+        .map((e) => e['dish_id'] as String?)
+        .whereType<String>()
+        .toList();
+
+    if (dishIds.isEmpty) return [];
+
+    // inFilter() quotes strings as "uuid" which breaks PostgREST UUID matching;
+    // use the raw filter form instead: in.(uuid1,uuid2)
+    final data = await _db
+        .from('dishes')
+        .select()
+        .filter('id', 'in', '(${dishIds.join(',')})');
+
     return (data as List)
-        .map((e) => DishModel.fromJson(e['dishes']))
+        .map((e) => DishModel.fromJson({...e, 'is_favorite': true}))
         .toList();
   }
 
   Future<void> toggleFavoriteDish(String dishId) async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
     if (userId == null) return;
-    final existing = await _db
+    // Use limit(1) instead of maybeSingle() to avoid throw on duplicate rows
+    final rows = await _db
         .from('favorites')
-        .select()
+        .select('id')
         .eq('user_id', userId)
         .eq('dish_id', dishId)
-        .maybeSingle();
-    if (existing != null) {
+        .limit(1);
+    final alreadyFavorited = (rows as List).isNotEmpty;
+    if (alreadyFavorited) {
       await _db
           .from('favorites')
           .delete()

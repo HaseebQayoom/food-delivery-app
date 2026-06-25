@@ -76,13 +76,15 @@ create table addresses (
 );
 
 create table payment_methods (
-  id         uuid primary key default gen_random_uuid(),
-  user_id    uuid references auth.users(id) on delete cascade not null,
-  type       text not null,
-  label      text not null,
-  last_four  text,
-  is_default boolean default false,
-  created_at timestamptz default now()
+  id                  uuid primary key default gen_random_uuid(),
+  user_id             uuid references auth.users(id) on delete cascade not null,
+  type                text not null,
+  label               text not null,
+  last_four           text,
+  stripe_pm_id        text,
+  stripe_customer_id  text,
+  is_default          boolean default false,
+  created_at          timestamptz default now()
 );
 
 create table orders (
@@ -123,19 +125,19 @@ alter table payment_methods enable row level security;
 alter table orders          enable row level security;
 alter table favorites       enable row level security;
 
-drop policy if exists "restaurants: public read"       on restaurants;
+drop policy if exists "restaurants: public read"        on restaurants;
 create policy "restaurants: public read"
   on restaurants for select using (true);
 
-drop policy if exists "dishes: public read"            on dishes;
+drop policy if exists "dishes: public read"             on dishes;
 create policy "dishes: public read"
   on dishes for select using (true);
 
-drop policy if exists "dishes: authenticated write"    on dishes;
+drop policy if exists "dishes: authenticated write"     on dishes;
 create policy "dishes: authenticated write"
   on dishes for all using (auth.uid() is not null);
 
-drop policy if exists "categories: public read"        on categories;
+drop policy if exists "categories: public read"         on categories;
 create policy "categories: public read"
   on categories for select using (true);
 
@@ -143,31 +145,31 @@ drop policy if exists "categories: authenticated write" on categories;
 create policy "categories: authenticated write"
   on categories for all using (auth.uid() is not null);
 
-drop policy if exists "profiles: owner all"            on profiles;
+drop policy if exists "profiles: owner all"             on profiles;
 create policy "profiles: owner all"
   on profiles for all using (auth.uid() = id);
 
-drop policy if exists "addresses: owner all"           on addresses;
+drop policy if exists "addresses: owner all"            on addresses;
 create policy "addresses: owner all"
   on addresses for all using (auth.uid() = user_id);
 
-drop policy if exists "payment_methods: owner all"     on payment_methods;
+drop policy if exists "payment_methods: owner all"      on payment_methods;
 create policy "payment_methods: owner all"
   on payment_methods for all using (auth.uid() = user_id);
 
-drop policy if exists "orders: owner all"              on orders;
+drop policy if exists "orders: owner all"               on orders;
 create policy "orders: owner all"
   on orders for all using (auth.uid() = user_id);
 
-drop policy if exists "orders: admin read all"         on orders;
+drop policy if exists "orders: admin read all"          on orders;
 create policy "orders: admin read all"
   on orders for select using (auth.uid() is not null);
 
-drop policy if exists "orders: admin update status"    on orders;
+drop policy if exists "orders: admin update status"     on orders;
 create policy "orders: admin update status"
   on orders for update using (auth.uid() is not null);
 
-drop policy if exists "favorites: owner all"           on favorites;
+drop policy if exists "favorites: owner all"            on favorites;
 create policy "favorites: owner all"
   on favorites for all using (auth.uid() = user_id);
 
@@ -198,21 +200,21 @@ insert into storage.buckets (id, name, public)
 values ('dish-images', 'dish-images', true)
 on conflict (id) do nothing;
 
-drop policy if exists "dish images: public read"   on storage.objects;
+drop policy if exists "dish images: public read"  on storage.objects;
 create policy "dish images: public read"
   on storage.objects for select using (bucket_id = 'dish-images');
 
-drop policy if exists "dish images: auth upload"   on storage.objects;
+drop policy if exists "dish images: auth upload"  on storage.objects;
 create policy "dish images: auth upload"
   on storage.objects for insert
   with check (bucket_id = 'dish-images' and auth.uid() is not null);
 
-drop policy if exists "dish images: auth update"   on storage.objects;
+drop policy if exists "dish images: auth update"  on storage.objects;
 create policy "dish images: auth update"
   on storage.objects for update
   using (bucket_id = 'dish-images' and auth.uid() is not null);
 
-drop policy if exists "dish images: auth delete"   on storage.objects;
+drop policy if exists "dish images: auth delete"  on storage.objects;
 create policy "dish images: auth delete"
   on storage.objects for delete
   using (bucket_id = 'dish-images' and auth.uid() is not null);

@@ -83,15 +83,18 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       final cartNotifier = ref.read(cartNotifierProvider.notifier);
       final total = cartNotifier.totalRs + state.tipRs;
 
-      // Run Stripe payment sheet for card payments
+      // Charge card — silently if saved PM+Customer exist, otherwise show sheet
       if (state.selectedPayment!.type == PaymentType.card) {
-        await StripeService.processPayment(amountRs: total);
+        await StripeService.processPayment(
+          amountRs: total,
+          stripePaymentMethodId: state.selectedPayment!.stripePaymentMethodId,
+          stripeCustomerId: state.selectedPayment!.stripeCustomerId,
+        );
       }
 
       final order = await ref.read(orderRepositoryProvider).placeOrder(
             items: cart,
             deliveryAddress: state.selectedAddress!.fullAddress,
-            paymentMethodId: state.selectedPayment!.id,
             deliveryFeeRs: cartNotifier.deliveryFeeRs,
             discountRs: cartNotifier.discountRs,
           );
@@ -100,7 +103,6 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       state = state.copyWith(isPlacingOrder: false, placedOrder: order);
       return order;
     } on StripeException catch (e) {
-      // User cancelled or card declined — don't treat as hard error
       final msg = e.error.localizedMessage ?? 'Payment cancelled.';
       state = state.copyWith(isPlacingOrder: false, error: msg);
       return null;

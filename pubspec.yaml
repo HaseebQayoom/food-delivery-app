@@ -58,10 +58,7 @@ dependencies:
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
 
-  # AI Chatbot (Gemini)
-  google_generative_ai: ^0.4.6
-
-  # Payments (Stripe)
+# Payments (Stripe)
   flutter_stripe: ^11.1.0
 
 dev_dependencies:

@@ -13,7 +13,20 @@ class AuthRepository {
     final res = await _auth.login(email, password);
     final user = res.user;
     if (user == null) throw Exception('Login failed');
-    return _fetchProfile(user.id);
+    final profile = await _fetchProfile(user.id);
+    if (profile.fullName.isEmpty) {
+      final name = user.userMetadata?['full_name'] as String? ?? '';
+      if (name.isNotEmpty) {
+        try {
+          await _db
+              .from('profiles')
+              .update({'full_name': name})
+              .eq('id', user.id);
+        } catch (_) {}
+        return profile.copyWith(fullName: name);
+      }
+    }
+    return profile;
   }
 
   Future<UserModel> signup({

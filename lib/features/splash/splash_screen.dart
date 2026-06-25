@@ -1,8 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:food_delivery/core/constants/env.dart';
 import 'package:food_delivery/core/navigation/app_navigator.dart';
-import 'package:food_delivery/core/providers/shared_prefs_provider.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -24,15 +25,26 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     await Future.delayed(const Duration(seconds: 2));
     if (!mounted) return;
 
-    // Read SharedPreferences from the injected provider (initialized in main())
-    final prefs = ref.read(sharedPrefsProvider);
-    final seen = prefs.getBool(StorageKeys.onboardingSeen) ?? false;
-    final session = Supabase.instance.client.auth.currentSession;
+    var session = Supabase.instance.client.auth.currentSession;
 
-    if (!seen) {
+    // JWT may be refreshing asynchronously — wait up to 3s for auth state
+    if (session == null) {
+      try {
+        final authState = await Supabase.instance.client.auth.onAuthStateChange
+            .first
+            .timeout(const Duration(seconds: 3));
+        session = authState.session;
+      } on TimeoutException {
+        session = null;
+      } catch (_) {
+        session = null;
+      }
+    }
+
+    if (!mounted) return;
+
+    if (session == null) {
       AppNavigator.toOnboarding(context);
-    } else if (session == null) {
-      AppNavigator.toAuth(context);
     } else {
       final adminEmail = Env.adminEmail;
       final userEmail = session.user.email ?? '';
@@ -63,7 +75,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Spacer(),
+            const Spacer(),             
             // Logo card
             Transform.rotate(
               angle: -0.12,

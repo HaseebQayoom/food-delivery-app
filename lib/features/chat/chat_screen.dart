@@ -18,6 +18,14 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    Future.microtask(
+      () => ref.read(chatNotifierProvider.notifier).refreshOrders(),
+    );
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
